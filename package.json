@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "apps/web"
+    "apps/web",
+    "apps/mobile"
   ],
   "scripts": {
     "dev": "npm run dev:web --",
@@ -15,7 +16,11 @@
     "typecheck": "npm run typecheck --workspaces",
     "lint": "biome check . && npm run lint --workspace web",
     "lint:fix": "biome check . --write && npm run lint:fix --workspace web",
-    "format": "biome format . --write"
+    "format": "biome format . --write",
+    "dev:mobile": "npm run start --workspace @intra42/mobile --",
+    "ios": "npm run ios --workspace @intra42/mobile --",
+    "android": "npm run android --workspace @intra42/mobile --",
+    "oauth:mobile": "npm run oauth --workspace @intra42/mobile"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15"
@@ -23,5 +28,12 @@
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
-  "packageManager": "npm@10.9.8"
+  "packageManager": "npm@10.9.8",
+  "overrides": {
+    "react-native": "0.86.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native-reanimated": "4.5.1",
+    "react-native-worklets": "0.10.1"
+  }
 }

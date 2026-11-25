@@ -5,3 +5,7 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+
+apps/mobile/.expo/
+apps/mobile/ios/
+apps/mobile/android/

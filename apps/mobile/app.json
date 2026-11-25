@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Intra42",
+    "slug": "intra42",
+    "scheme": "intra42",
+    "plugins": ["expo-router", "expo-secure-store"],
+    "ios": { "bundleIdentifier": "dev.intra42.mobile" },
+    "android": { "package": "dev.intra42.mobile" }
+  }
+}
