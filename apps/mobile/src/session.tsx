@@ -13,12 +13,19 @@ type Session = {
 };
 const context = createContext<Session | null>(null);
 const storageKey = "intra42.oauth.v1";
-const broker = process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL?.replace(/\/$/, "");
+function oauthOrigin(value: string | undefined) {
+  if (!value) return;
+  const url = new URL(value);
+  const local =
+    __DEV__ && url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+  if ((url.protocol === "https:" || local) && !url.username && !url.password) return url.origin;
+}
+export const broker = oauthOrigin(process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL);
 export const demo = __DEV__ && process.env.EXPO_PUBLIC_INTRA42_DEMO === "1";
 const demoToken = { accessToken: "demo", expiresAt: Infinity };
 
 async function exchange(path: string, payload: object): Promise<Token> {
-  if (!broker?.startsWith("https://")) throw new Error("Configure the HTTPS OAuth service URL.");
+  if (!broker) throw new Error("Configure the HTTPS OAuth service URL.");
   const response = await fetch(broker + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -107,7 +114,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setToken(demoToken);
       return;
     }
-    if (!broker?.startsWith("https://")) throw new Error("Configure the HTTPS OAuth service URL.");
+    if (!broker) throw new Error("Configure the HTTPS OAuth service URL.");
     const state = (await Crypto.getRandomBytesAsync(32)).reduce(
       (s, byte) => s + byte.toString(16).padStart(2, "0"),
       "",

@@ -1,18 +1,35 @@
 import { Tabs } from "expo-router";
 import { Image, Text } from "react-native";
-import { useProfile } from "../../src/api";
+import { useProfileAvatar } from "../../src/api";
 import { teal } from "../../src/ui";
 export default function AndroidTabs() {
-  const image = useProfile().data?.image;
-  const avatar = image?.versions?.small ?? image?.link;
+  const avatar = useProfileAvatar();
   return (
     <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: teal }}>
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
+          tabBarIcon: ({ color, size }) =>
+            avatar ? (
+              <Image
+                source={{ uri: avatar }}
+                style={{ width: size, height: size, borderRadius: size / 2 }}
+              />
+            ) : (
+              <Text style={{ color: color ?? undefined, fontSize: size }}>⌂</Text>
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="projects"
+        options={{
+          title: "Projects",
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ color: color ?? undefined, fontSize: size }}>⌂</Text>
+            <Image
+              source={require("../../assets/projects-tab.png")}
+              style={{ width: size, height: size, tintColor: color }}
+            />
           ),
         }}
       />
@@ -26,18 +43,12 @@ export default function AndroidTabs() {
         }}
       />
       <Tabs.Screen
-        name="config"
+        name="clusters"
         options={{
-          title: "Config",
-          tabBarIcon: ({ color, size }) =>
-            avatar ? (
-              <Image
-                source={{ uri: avatar }}
-                style={{ width: size, height: size, borderRadius: size / 2 }}
-              />
-            ) : (
-              <Text style={{ color: color ?? undefined, fontSize: size }}>⚙</Text>
-            ),
+          title: "Clusters",
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color: color ?? undefined, fontSize: size }}>▤</Text>
+          ),
         }}
       />
     </Tabs>

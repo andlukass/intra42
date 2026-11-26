@@ -1,0 +1,908 @@
+[
+  {
+    "id": 315,
+    "name": "f0",
+    "campus_id": 1,
+    "image": "https://cdn.intra.42.fr/cluster/image/315/42f0.svg"
+  },
+  {
+    "id": 316,
+    "name": "f1",
+    "campus_id": 1,
+    "image": "https://cdn.intra.42.fr/cluster/image/316/42f1.svg"
+  },
+  {
+    "id": 317,
+    "name": "f1b",
+    "campus_id": 1,
+    "image": "https://cdn.intra.42.fr/cluster/image/317/42f1b.svg"
+  },
+  {
+    "id": 318,
+    "name": "f2",
+    "campus_id": 1,
+    "image": "https://cdn.intra.42.fr/cluster/image/318/42f2.svg"
+  },
+  {
+    "id": 319,
+    "name": "f4",
+    "campus_id": 1,
+    "image": "https://cdn.intra.42.fr/cluster/image/319/42f4.svg"
+  },
+  {
+    "id": 320,
+    "name": "f6",
+    "campus_id": 1,
+    "image": "https://cdn.intra.42.fr/cluster/image/320/42f6.svg"
+  },
+  {
+    "id": 129,
+    "name": "Io",
+    "campus_id": 9,
+    "image": "https://cdn.intra.42.fr/cluster/image/129/Io_matrix.svg"
+  },
+  {
+    "id": 130,
+    "name": "Discovery",
+    "campus_id": 9,
+    "image": "https://cdn.intra.42.fr/cluster/image/130/Discovery.svg"
+  },
+  {
+    "id": 20,
+    "name": "shi",
+    "campus_id": 12,
+    "image": "https://cdn.intra.42.fr/cluster/image/20/shi30.svg"
+  },
+  {
+    "id": 21,
+    "name": "fu",
+    "campus_id": 12,
+    "image": "https://cdn.intra.42.fr/cluster/image/21/fu33.svg"
+  },
+  {
+    "id": 54,
+    "name": "mi",
+    "campus_id": 12,
+    "image": "https://cdn.intra.42.fr/cluster/image/54/mi44.svg"
+  },
+  {
+    "id": 164,
+    "name": "a1",
+    "campus_id": 12,
+    "image": "https://cdn.intra.42.fr/cluster/image/164/a1_1.svg"
+  },
+  {
+    "id": 165,
+    "name": "a2",
+    "campus_id": 12,
+    "image": "https://cdn.intra.42.fr/cluster/image/165/a2_1.svg"
+  },
+  {
+    "id": 17,
+    "name": "c1",
+    "campus_id": 13,
+    "image": "https://cdn.intra.42.fr/cluster/image/17/cluster_1.svg"
+  },
+  {
+    "id": 18,
+    "name": "c2",
+    "campus_id": 13,
+    "image": "https://cdn.intra.42.fr/cluster/image/18/cluster_2.svg"
+  },
+  {
+    "id": 19,
+    "name": "c3",
+    "campus_id": 13,
+    "image": "https://cdn.intra.42.fr/cluster/image/19/cluster_3.svg"
+  },
+  {
+    "id": 153,
+    "name": "f0",
+    "campus_id": 14,
+    "image": "https://cdn.intra.42.fr/cluster/image/153/intra-f0.svg"
+  },
+  {
+    "id": 156,
+    "name": "f1",
+    "campus_id": 14,
+    "image": "https://cdn.intra.42.fr/cluster/image/156/intra-f1.svg"
+  },
+  {
+    "id": 257,
+    "name": "silent-workspace",
+    "campus_id": 14,
+    "image": "https://cdn.intra.42.fr/cluster/image/257/intra-f1r7.svg"
+  },
+  {
+    "id": 7,
+    "name": "e1",
+    "campus_id": 16,
+    "image": "https://cdn.intra.42.fr/cluster/image/7/khouribga-cluster-e1.svg"
+  },
+  {
+    "id": 8,
+    "name": "e2",
+    "campus_id": 16,
+    "image": "https://cdn.intra.42.fr/cluster/image/8/khouribga-cluster-e2.svg"
+  },
+  {
+    "id": 207,
+    "name": "e3",
+    "campus_id": 16,
+    "image": "https://cdn.intra.42.fr/cluster/image/207/khga-cluster-e3.svg"
+  },
+  {
+    "id": 136,
+    "name": "8a",
+    "campus_id": 20,
+    "image": "https://cdn.intra.42.fr/cluster/image/136/cluster-8a.svg"
+  },
+  {
+    "id": 137,
+    "name": "7a",
+    "campus_id": 20,
+    "image": "https://cdn.intra.42.fr/cluster/image/137/cluster7a.svg"
+  },
+  {
+    "id": 138,
+    "name": "7b",
+    "campus_id": 20,
+    "image": "https://cdn.intra.42.fr/cluster/image/138/cluster7b.svg"
+  },
+  {
+    "id": 36,
+    "name": "e1",
+    "campus_id": 21,
+    "image": "https://cdn.intra.42.fr/cluster/image/36/bg_e1.svg"
+  },
+  {
+    "id": 37,
+    "name": "e2",
+    "campus_id": 21,
+    "image": "https://cdn.intra.42.fr/cluster/image/37/bg_e2.svg"
+  },
+  {
+    "id": 223,
+    "name": "c3",
+    "campus_id": 21,
+    "image": "https://cdn.intra.42.fr/cluster/image/223/cluster.svg"
+  },
+  {
+    "id": 224,
+    "name": "c4",
+    "campus_id": 21,
+    "image": "https://cdn.intra.42.fr/cluster/image/224/cluster.svg"
+  },
+  {
+    "id": 24,
+    "name": "c1",
+    "campus_id": 22,
+    "image": "https://cdn.intra.42.fr/cluster/image/24/c1.svg"
+  },
+  {
+    "id": 25,
+    "name": "c2",
+    "campus_id": 22,
+    "image": "https://cdn.intra.42.fr/cluster/image/25/c2__1_.svg"
+  },
+  {
+    "id": 26,
+    "name": "c3",
+    "campus_id": 22,
+    "image": "https://cdn.intra.42.fr/cluster/image/26/c3__2_.svg"
+  },
+  {
+    "id": 66,
+    "name": "C1",
+    "campus_id": 25,
+    "image": "https://cdn.intra.42.fr/cluster/image/66/quebec-cluster-c1.svg"
+  },
+  {
+    "id": 67,
+    "name": "C2",
+    "campus_id": 25,
+    "image": "https://cdn.intra.42.fr/cluster/image/67/quebec-cluster-c2.svg"
+  },
+  {
+    "id": 68,
+    "name": "C3",
+    "campus_id": 25,
+    "image": "https://cdn.intra.42.fr/cluster/image/68/quebec-cluster-c3.svg"
+  },
+  {
+    "id": 265,
+    "name": "c1 - KOI",
+    "campus_id": 26,
+    "image": "https://cdn.intra.42.fr/cluster/image/265/42tokyo_c1_KOI.svg"
+  },
+  {
+    "id": 266,
+    "name": "c2 - UME",
+    "campus_id": 26,
+    "image": "https://cdn.intra.42.fr/cluster/image/266/42tokyo_c2_UME.svg"
+  },
+  {
+    "id": 267,
+    "name": "c3 - WASHI",
+    "campus_id": 26,
+    "image": "https://cdn.intra.42.fr/cluster/image/267/42tokyo_c3_WASHI.svg"
+  },
+  {
+    "id": 268,
+    "name": "c4 - FUJI",
+    "campus_id": 26,
+    "image": "https://cdn.intra.42.fr/cluster/image/268/42tokyo_c4_FUJI.svg"
+  },
+  {
+    "id": 269,
+    "name": "c5 - SAKURA",
+    "campus_id": 26,
+    "image": "https://cdn.intra.42.fr/cluster/image/269/42tokyo_c5_SAKURA.svg"
+  },
+  {
+    "id": 270,
+    "name": "c6 - TSURU",
+    "campus_id": 26,
+    "image": "https://cdn.intra.42.fr/cluster/image/270/42tokyo_c6_TSURU.svg"
+  },
+  {
+    "id": 134,
+    "name": "test",
+    "campus_id": 28,
+    "image": "https://cdn.intra.42.fr/cluster/image/134/test_orig_-_Copy.svg"
+  },
+  {
+    "id": 39,
+    "name": "c1",
+    "campus_id": 29,
+    "image": "https://cdn.intra.42.fr/cluster/image/39/c1_seoul.svg"
+  },
+  {
+    "id": 40,
+    "name": "c2",
+    "campus_id": 29,
+    "image": "https://cdn.intra.42.fr/cluster/image/40/c2_seoul.svg"
+  },
+  {
+    "id": 41,
+    "name": "c3",
+    "campus_id": 29,
+    "image": "https://cdn.intra.42.fr/cluster/image/41/c3_seoul.svg"
+  },
+  {
+    "id": 42,
+    "name": "c4",
+    "campus_id": 29,
+    "image": "https://cdn.intra.42.fr/cluster/image/42/c4_seoul.svg"
+  },
+  {
+    "id": 43,
+    "name": "c5",
+    "campus_id": 29,
+    "image": "https://cdn.intra.42.fr/cluster/image/43/c5_seoul.svg"
+  },
+  {
+    "id": 44,
+    "name": "c6",
+    "campus_id": 29,
+    "image": "https://cdn.intra.42.fr/cluster/image/44/c6_seoul.svg"
+  },
+  {
+    "id": 196,
+    "name": "cX-2",
+    "campus_id": 29,
+    "image": "https://cdn.intra.42.fr/cluster/image/196/cX-2_seoul.svg"
+  },
+  {
+    "id": 74,
+    "name": "Bunker",
+    "campus_id": 30,
+    "image": "https://cdn.intra.42.fr/cluster/image/74/cluster_42_roma_elis_piano_sotto.svg"
+  },
+  {
+    "id": 75,
+    "name": "C4, pronto a esplodere",
+    "campus_id": 30,
+    "image": "https://cdn.intra.42.fr/cluster/image/75/cluster-2-42Roma.svg"
+  },
+  {
+    "id": 342,
+    "name": "Piccionaia",
+    "campus_id": 30,
+    "image": "https://cdn.intra.42.fr/cluster/image/342/cluster_42_roma_elis_piano_sopra.svg"
+  },
+  {
+    "id": 119,
+    "name": "C1",
+    "campus_id": 31,
+    "image": "https://cdn.intra.42.fr/cluster/image/119/42AC1.svg"
+  },
+  {
+    "id": 120,
+    "name": "C2",
+    "campus_id": 31,
+    "image": "https://cdn.intra.42.fr/cluster/image/120/42AC2.svg"
+  },
+  {
+    "id": 121,
+    "name": "C3",
+    "campus_id": 31,
+    "image": "https://cdn.intra.42.fr/cluster/image/121/42AC3.svg"
+  },
+  {
+    "id": 326,
+    "name": "c1",
+    "campus_id": 32,
+    "image": "https://cdn.intra.42.fr/cluster/image/326/c1.svg"
+  },
+  {
+    "id": 327,
+    "name": "c2",
+    "campus_id": 32,
+    "image": "https://cdn.intra.42.fr/cluster/image/327/c2__3_.svg"
+  },
+  {
+    "id": 332,
+    "name": "GF",
+    "campus_id": 34,
+    "image": "https://cdn.intra.42.fr/cluster/image/332/GF.svg"
+  },
+  {
+    "id": 333,
+    "name": "1F",
+    "campus_id": 34,
+    "image": "https://cdn.intra.42.fr/cluster/image/333/1F.svg"
+  },
+  {
+    "id": 334,
+    "name": "2F",
+    "campus_id": 34,
+    "image": "https://cdn.intra.42.fr/cluster/image/334/2F.svg"
+  },
+  {
+    "id": 335,
+    "name": "3F",
+    "campus_id": 34,
+    "image": "https://cdn.intra.42.fr/cluster/image/335/3F.svg"
+  },
+  {
+    "id": 355,
+    "name": "Cluster-404",
+    "campus_id": 35,
+    "image": "https://cdn.intra.42.fr/cluster/image/355/C1.svg"
+  },
+  {
+    "id": 356,
+    "name": "Cluster-500",
+    "campus_id": 35,
+    "image": "https://cdn.intra.42.fr/cluster/image/356/C2.svg"
+  },
+  {
+    "id": 357,
+    "name": "Cluster-200",
+    "campus_id": 35,
+    "image": "https://cdn.intra.42.fr/cluster/image/357/C4.svg"
+  },
+  {
+    "id": 358,
+    "name": "Cluster-301",
+    "campus_id": 35,
+    "image": "https://cdn.intra.42.fr/cluster/image/358/C3.svg"
+  },
+  {
+    "id": 111,
+    "name": "F2K-Kobol",
+    "campus_id": 36,
+    "image": "https://cdn.intra.42.fr/cluster/image/111/Kobol_F2K_01.svg"
+  },
+  {
+    "id": 112,
+    "name": "F2N-Naboo",
+    "campus_id": 36,
+    "image": "https://cdn.intra.42.fr/cluster/image/112/Naboo_F2N_01.svg"
+  },
+  {
+    "id": 113,
+    "name": "F3C-Cadia",
+    "campus_id": 36,
+    "image": "https://cdn.intra.42.fr/cluster/image/113/Cadia_F3C_01.svg"
+  },
+  {
+    "id": 125,
+    "name": "c1_malaga",
+    "campus_id": 37,
+    "image": "https://cdn.intra.42.fr/cluster/image/125/malaga_cluster_1.svg"
+  },
+  {
+    "id": 126,
+    "name": "c2_malaga",
+    "campus_id": 37,
+    "image": "https://cdn.intra.42.fr/cluster/image/126/malaga_cluster_2.svg"
+  },
+  {
+    "id": 127,
+    "name": "c3_malaga",
+    "campus_id": 37,
+    "image": "https://cdn.intra.42.fr/cluster/image/127/malaga_cluster_3.svg"
+  },
+  {
+    "id": 59,
+    "name": "Cluster 1",
+    "campus_id": 38,
+    "image": "https://cdn.intra.42.fr/cluster/image/59/lisboa-c1-new.svg"
+  },
+  {
+    "id": 60,
+    "name": "Cluster 2",
+    "campus_id": 38,
+    "image": "https://cdn.intra.42.fr/cluster/image/60/lisboa-c2.svg"
+  },
+  {
+    "id": 233,
+    "name": "c2",
+    "campus_id": 39,
+    "image": "https://cdn.intra.42.fr/cluster/image/233/c2.svg"
+  },
+  {
+    "id": 76,
+    "name": "c1",
+    "campus_id": 40,
+    "image": "https://cdn.intra.42.fr/cluster/image/76/c1_urduliz.svg"
+  },
+  {
+    "id": 77,
+    "name": "c2",
+    "campus_id": 40,
+    "image": "https://cdn.intra.42.fr/cluster/image/77/c2_urduliz.svg"
+  },
+  {
+    "id": 78,
+    "name": "c3",
+    "campus_id": 40,
+    "image": "https://cdn.intra.42.fr/cluster/image/78/c3_urduliz.svg"
+  },
+  {
+    "id": 79,
+    "name": "c4",
+    "campus_id": 40,
+    "image": "https://cdn.intra.42.fr/cluster/image/79/c4_urduliz.svg"
+  },
+  {
+    "id": 55,
+    "name": "c1",
+    "campus_id": 41,
+    "image": "https://cdn.intra.42.fr/cluster/image/55/nice_c1.svg"
+  },
+  {
+    "id": 56,
+    "name": "c2",
+    "campus_id": 41,
+    "image": "https://cdn.intra.42.fr/cluster/image/56/nice_c2.svg"
+  },
+  {
+    "id": 57,
+    "name": "c3",
+    "campus_id": 41,
+    "image": "https://cdn.intra.42.fr/cluster/image/57/nice_c3.svg"
+  },
+  {
+    "id": 58,
+    "name": "c4",
+    "campus_id": 41,
+    "image": "https://cdn.intra.42.fr/cluster/image/58/nice_c4.svg"
+  },
+  {
+    "id": 71,
+    "name": "Lab1",
+    "campus_id": 43,
+    "image": "https://cdn.intra.42.fr/cluster/image/71/lab1.svg"
+  },
+  {
+    "id": 72,
+    "name": "Lab2",
+    "campus_id": 43,
+    "image": "https://cdn.intra.42.fr/cluster/image/72/lab2.svg"
+  },
+  {
+    "id": 73,
+    "name": "Lab3",
+    "campus_id": 43,
+    "image": "https://cdn.intra.42.fr/cluster/image/73/lab3.svg"
+  },
+  {
+    "id": 99,
+    "name": "c1",
+    "campus_id": 44,
+    "image": "https://cdn.intra.42.fr/cluster/image/99/cluster1-corrected.svg"
+  },
+  {
+    "id": 100,
+    "name": "c2",
+    "campus_id": 44,
+    "image": "https://cdn.intra.42.fr/cluster/image/100/cluster2__2_.svg"
+  },
+  {
+    "id": 280,
+    "name": "c3 - Quiet Cluster",
+    "campus_id": 44,
+    "image": "https://cdn.intra.42.fr/cluster/image/280/cluster3.svg"
+  },
+  {
+    "id": 101,
+    "name": "ca",
+    "campus_id": 46,
+    "image": "https://cdn.intra.42.fr/cluster/image/101/clusterA.svg"
+  },
+  {
+    "id": 102,
+    "name": "cb",
+    "campus_id": 46,
+    "image": "https://cdn.intra.42.fr/cluster/image/102/clusterB.svg"
+  },
+  {
+    "id": 90,
+    "name": "c1",
+    "campus_id": 47,
+    "image": "https://cdn.intra.42.fr/cluster/image/90/c1-final.svg"
+  },
+  {
+    "id": 91,
+    "name": "c2",
+    "campus_id": 47,
+    "image": "https://cdn.intra.42.fr/cluster/image/91/c2-final.svg"
+  },
+  {
+    "id": 133,
+    "name": "c3",
+    "campus_id": 47,
+    "image": "https://cdn.intra.42.fr/cluster/image/133/c3.svg"
+  },
+  {
+    "id": 104,
+    "name": "k0",
+    "campus_id": 48,
+    "image": "https://cdn.intra.42.fr/cluster/image/104/k0.svg"
+  },
+  {
+    "id": 105,
+    "name": "k1",
+    "campus_id": 48,
+    "image": "https://cdn.intra.42.fr/cluster/image/105/k1.svg"
+  },
+  {
+    "id": 106,
+    "name": "k2",
+    "campus_id": 48,
+    "image": "https://cdn.intra.42.fr/cluster/image/106/k2.svg"
+  },
+  {
+    "id": 359,
+    "name": "42İstanbul - k0",
+    "campus_id": 49,
+    "image": "https://cdn.intra.42.fr/cluster/image/359/42Istanbul_k0_2.svg"
+  },
+  {
+    "id": 360,
+    "name": "42 İstanbul - k1",
+    "campus_id": 49,
+    "image": "https://cdn.intra.42.fr/cluster/image/360/42Istanbul_k1_2.svg"
+  },
+  {
+    "id": 361,
+    "name": "42 İstanbul - k2",
+    "campus_id": 49,
+    "image": "https://cdn.intra.42.fr/cluster/image/361/42Istanbul_k2_2.svg"
+  },
+  {
+    "id": 362,
+    "name": "42 İstanbul - Hub",
+    "campus_id": 49,
+    "image": "https://cdn.intra.42.fr/cluster/image/362/42Istanbul_k4.svg"
+  },
+  {
+    "id": 122,
+    "name": "42Kocaeli-1st-Floor",
+    "campus_id": 50,
+    "image": "https://cdn.intra.42.fr/cluster/image/122/42Kocaeli_1stFloor.svg"
+  },
+  {
+    "id": 123,
+    "name": "42Kocaeli-2nd-Floor",
+    "campus_id": 50,
+    "image": "https://cdn.intra.42.fr/cluster/image/123/42Kocaeli_2ndFloor.svg"
+  },
+  {
+    "id": 189,
+    "name": "c0c",
+    "campus_id": 51,
+    "image": "https://cdn.intra.42.fr/cluster/image/189/0c.svg"
+  },
+  {
+    "id": 190,
+    "name": "c1b",
+    "campus_id": 51,
+    "image": "https://cdn.intra.42.fr/cluster/image/190/1b.svg"
+  },
+  {
+    "id": 273,
+    "name": "c3a",
+    "campus_id": 51,
+    "image": "https://cdn.intra.42.fr/cluster/image/273/3a.svg"
+  },
+  {
+    "id": 276,
+    "name": "c4a",
+    "campus_id": 51,
+    "image": "https://cdn.intra.42.fr/cluster/image/276/4a.svg"
+  },
+  {
+    "id": 277,
+    "name": "c4b",
+    "campus_id": 51,
+    "image": "https://cdn.intra.42.fr/cluster/image/277/4b.svg"
+  },
+  {
+    "id": 278,
+    "name": "c4c",
+    "campus_id": 51,
+    "image": "https://cdn.intra.42.fr/cluster/image/278/4c.svg"
+  },
+  {
+    "id": 135,
+    "name": "Wakanda",
+    "campus_id": 52,
+    "image": "https://cdn.intra.42.fr/cluster/image/135/Wakanda_definitivo.svg"
+  },
+  {
+    "id": 145,
+    "name": "Nidavellir",
+    "campus_id": 52,
+    "image": "https://cdn.intra.42.fr/cluster/image/145/Nidavellir_definitivo.svg"
+  },
+  {
+    "id": 161,
+    "name": "C1 Source Code",
+    "campus_id": 53,
+    "image": "https://cdn.intra.42.fr/cluster/image/161/Cluster1_04.06.2025.svg"
+  },
+  {
+    "id": 162,
+    "name": "C2 Pathfinder",
+    "campus_id": 53,
+    "image": "https://cdn.intra.42.fr/cluster/image/162/Cluster2_02.06.25.svg"
+  },
+  {
+    "id": 163,
+    "name": "C3 Galaxy",
+    "campus_id": 53,
+    "image": "https://cdn.intra.42.fr/cluster/image/163/Cluster3_25.04.25.svg"
+  },
+  {
+    "id": 131,
+    "name": "c1",
+    "campus_id": 55,
+    "image": "https://cdn.intra.42.fr/cluster/image/131/cluster-c1__1_.svg"
+  },
+  {
+    "id": 132,
+    "name": "c2",
+    "campus_id": 55,
+    "image": "https://cdn.intra.42.fr/cluster/image/132/c23.svg"
+  },
+  {
+    "id": 343,
+    "name": "C1",
+    "campus_id": 56,
+    "image": "https://cdn.intra.42.fr/cluster/image/343/cluster_1_prague.svg"
+  },
+  {
+    "id": 346,
+    "name": "C2",
+    "campus_id": 56,
+    "image": "https://cdn.intra.42.fr/cluster/image/346/cluster_2_prague.svg"
+  },
+  {
+    "id": 347,
+    "name": "C3",
+    "campus_id": 56,
+    "image": "https://cdn.intra.42.fr/cluster/image/347/cluster_3_prague.svg"
+  },
+  {
+    "id": 167,
+    "name": "Cluster 1",
+    "campus_id": 57,
+    "image": "https://cdn.intra.42.fr/cluster/image/167/cluster_1.svg"
+  },
+  {
+    "id": 172,
+    "name": "Cluster 2",
+    "campus_id": 57,
+    "image": "https://cdn.intra.42.fr/cluster/image/172/cluster_2.svg"
+  },
+  {
+    "id": 173,
+    "name": "Cluster 3",
+    "campus_id": 57,
+    "image": "https://cdn.intra.42.fr/cluster/image/173/cluster_3.svg"
+  },
+  {
+    "id": 308,
+    "name": "Cluster 4",
+    "campus_id": 57,
+    "image": "https://cdn.intra.42.fr/cluster/image/308/cluster_4.svg"
+  },
+  {
+    "id": 149,
+    "name": "Cluster 1",
+    "campus_id": 58,
+    "image": "https://cdn.intra.42.fr/cluster/image/149/porto-c1_1_.svg"
+  },
+  {
+    "id": 264,
+    "name": "Cluster 2",
+    "campus_id": 58,
+    "image": "https://cdn.intra.42.fr/cluster/image/264/porto-c2.svg"
+  },
+  {
+    "id": 296,
+    "name": "Cluster 1 + 2",
+    "campus_id": 59,
+    "image": "https://cdn.intra.42.fr/cluster/image/296/cluster1_2lenovointra.svg"
+  },
+  {
+    "id": 297,
+    "name": "Cluster 3",
+    "campus_id": 59,
+    "image": "https://cdn.intra.42.fr/cluster/image/297/cluster3c_intra.svg"
+  },
+  {
+    "id": 340,
+    "name": "cluster4",
+    "campus_id": 59,
+    "image": "https://cdn.intra.42.fr/cluster/image/340/cluster4lovelace.svg"
+  },
+  {
+    "id": 169,
+    "name": "Cluster 3",
+    "campus_id": 60,
+    "image": "https://cdn.intra.42.fr/cluster/image/169/42Perpignan_cluster_3.svg"
+  },
+  {
+    "id": 170,
+    "name": "Cluster 2",
+    "campus_id": 60,
+    "image": "https://cdn.intra.42.fr/cluster/image/170/42Perpignan_cluster_2.svg"
+  },
+  {
+    "id": 171,
+    "name": "Cluster 1",
+    "campus_id": 60,
+    "image": "https://cdn.intra.42.fr/cluster/image/171/42Perpignan_cluster_1.svg"
+  },
+  {
+    "id": 199,
+    "name": "Jotunheim",
+    "campus_id": 62,
+    "image": "https://cdn.intra.42.fr/cluster/image/199/jotunheim.svg"
+  },
+  {
+    "id": 200,
+    "name": "Niflheim",
+    "campus_id": 62,
+    "image": "https://cdn.intra.42.fr/cluster/image/200/nilfheim.svg"
+  },
+  {
+    "id": 204,
+    "name": "c1",
+    "campus_id": 64,
+    "image": "https://cdn.intra.42.fr/cluster/image/204/c1.svg"
+  },
+  {
+    "id": 205,
+    "name": "c2",
+    "campus_id": 64,
+    "image": "https://cdn.intra.42.fr/cluster/image/205/c2.svg"
+  },
+  {
+    "id": 232,
+    "name": "Cluster 1",
+    "campus_id": 65,
+    "image": "https://cdn.intra.42.fr/cluster/image/232/antananarivo_cluster.svg"
+  },
+  {
+    "id": 305,
+    "name": "Floor2",
+    "campus_id": 67,
+    "image": "https://cdn.intra.42.fr/cluster/image/305/floor2_v7.svg"
+  },
+  {
+    "id": 283,
+    "name": "Angola_Norte",
+    "campus_id": 68,
+    "image": "https://cdn.intra.42.fr/cluster/image/283/Angola_Norte.svg"
+  },
+  {
+    "id": 285,
+    "name": "Angola Sul",
+    "campus_id": 68,
+    "image": "https://cdn.intra.42.fr/cluster/image/285/Angola_Sul.svg"
+  },
+  {
+    "id": 286,
+    "name": "Luanda",
+    "campus_id": 68,
+    "image": "https://cdn.intra.42.fr/cluster/image/286/Luanda.svg"
+  },
+  {
+    "id": 341,
+    "name": "Baía de Luanda",
+    "campus_id": 68,
+    "image": "https://cdn.intra.42.fr/cluster/image/341/Baia_de_Luanda.svg"
+  },
+  {
+    "id": 253,
+    "name": "c1",
+    "campus_id": 69,
+    "image": "https://cdn.intra.42.fr/cluster/image/253/cluster1.svg"
+  },
+  {
+    "id": 255,
+    "name": "c2",
+    "campus_id": 69,
+    "image": "https://cdn.intra.42.fr/cluster/image/255/C2.svg"
+  },
+  {
+    "id": 256,
+    "name": "c3",
+    "campus_id": 69,
+    "image": "https://cdn.intra.42.fr/cluster/image/256/Cluster3.svg"
+  },
+  {
+    "id": 262,
+    "name": "Cluster 1",
+    "campus_id": 71,
+    "image": "https://cdn.intra.42.fr/cluster/image/262/cluster1.svg"
+  },
+  {
+    "id": 263,
+    "name": "Cluster 2",
+    "campus_id": 71,
+    "image": "https://cdn.intra.42.fr/cluster/image/263/cluster2.svg"
+  },
+  {
+    "id": 336,
+    "name": "42IP Cluster 1",
+    "campus_id": 73,
+    "image": "https://cdn.intra.42.fr/cluster/image/336/42IP-Cluster_1.svg"
+  },
+  {
+    "id": 337,
+    "name": "42IP Cluster 2",
+    "campus_id": 73,
+    "image": "https://cdn.intra.42.fr/cluster/image/337/42IP-Cluster_2.svg"
+  },
+  {
+    "id": 300,
+    "name": "Cluster 1",
+    "campus_id": 75,
+    "image": "https://cdn.intra.42.fr/cluster/image/300/E1.svg"
+  },
+  {
+    "id": 301,
+    "name": "Cluster 2",
+    "campus_id": 75,
+    "image": "https://cdn.intra.42.fr/cluster/image/301/E2.svg"
+  },
+  {
+    "id": 302,
+    "name": "Cluster 3",
+    "campus_id": 75,
+    "image": "https://cdn.intra.42.fr/cluster/image/302/E3.svg"
+  },
+  {
+    "id": 328,
+    "name": "lab1",
+    "campus_id": 76,
+    "image": "https://cdn.intra.42.fr/cluster/image/328/42alain.svg"
+  }
+]

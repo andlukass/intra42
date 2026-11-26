@@ -1,14 +1,94 @@
-import type { ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { BlurTargetView, BlurView } from "expo-blur";
+import { type ReactNode, type Ref, useRef } from "react";
+import {
+  type DimensionValue,
+  Platform,
+  Pressable,
+  ScrollView,
+  type ScrollViewProps,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { type Edge, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-export const teal = "#007d80";
-export function Screen({ children }: { children: ReactNode }) {
+import { theme } from "./theme";
+
+export const teal = theme.tealText;
+export const stackScreenEdges: Edge[] =
+  Platform.OS === "ios" ? ["left", "right"] : ["left", "right", "bottom"];
+
+export function useStackScrollInsets() {
+  const { bottom } = useSafeAreaInsets();
+  if (Platform.OS !== "ios") return undefined;
+  return {
+    automaticallyAdjustContentInsets: false,
+    automaticallyAdjustsScrollIndicatorInsets: false,
+    contentInsetAdjustmentBehavior: "never",
+    contentInset: { bottom },
+    scrollIndicatorInsets: { bottom },
+  } satisfies ScrollViewProps;
+}
+
+export function Screen({
+  children,
+  overlay,
+  refreshControl,
+  stickyHeaderIndices,
+  scrollRef,
+  scrollUnderStatusBar = false,
+  underHeader = false,
+}: {
+  children: ReactNode;
+  overlay?: ReactNode;
+  refreshControl?: ScrollViewProps["refreshControl"];
+  stickyHeaderIndices?: ScrollViewProps["stickyHeaderIndices"];
+  scrollRef?: Ref<ScrollView>;
+  scrollUnderStatusBar?: boolean;
+  underHeader?: boolean;
+}) {
+  const { top } = useSafeAreaInsets();
+  const blurTarget = useRef<View>(null);
+  const content = (
+    <ScrollView
+      ref={scrollRef}
+      contentContainerStyle={[
+        styles.content,
+        scrollUnderStatusBar && { paddingTop: top + theme.spacing },
+      ]}
+      contentInsetAdjustmentBehavior={scrollUnderStatusBar ? "never" : undefined}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={refreshControl}
+      stickyHeaderIndices={stickyHeaderIndices}
+    >
+      {children}
+    </ScrollView>
+  );
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {children}
-      </ScrollView>
+    <SafeAreaView
+      edges={scrollUnderStatusBar || underHeader ? ["left", "right"] : ["top", "left", "right"]}
+      style={styles.screen}
+    >
+      {scrollUnderStatusBar ? (
+        <>
+          <BlurTargetView ref={blurTarget} style={styles.screen}>
+            {content}
+          </BlurTargetView>
+          {top > 0 && (
+            <BlurView
+              pointerEvents="none"
+              tint="light"
+              intensity={40}
+              blurMethod="dimezisBlurViewSdk31Plus"
+              blurTarget={blurTarget}
+              style={[styles.statusBarBlur, { height: top }]}
+            />
+          )}
+        </>
+      ) : (
+        content
+      )}
+      {overlay}
     </SafeAreaView>
   );
 }
@@ -46,29 +126,72 @@ export function QueryMessage({
   pending,
   error,
   empty,
+  skeleton,
 }: {
   pending: boolean;
   error: Error | null;
   empty: string;
+  skeleton?: ReactNode;
 }) {
-  return <Text style={styles.muted}>{error?.message ?? (pending ? "Loading…" : empty)}</Text>;
+  if (pending && !error) {
+    return (
+      <View accessible accessibilityLabel="Loading" accessibilityState={{ busy: true }}>
+        {skeleton ?? <SkeletonList />}
+      </View>
+    );
+  }
+  return <Text style={styles.muted}>{error?.message ?? empty}</Text>;
+}
+
+export function SkeletonBlock({
+  width = "100%",
+  height,
+  radius = 5,
+  color = theme.border,
+}: {
+  width?: DimensionValue;
+  height: number;
+  radius?: number;
+  color?: string;
+}) {
+  return <View style={{ width, height, borderRadius: radius, backgroundColor: color }} />;
+}
+
+export function SkeletonList({ cardHeight = 90 }: { cardHeight?: number }) {
+  return (
+    <View style={{ gap: theme.spacing }}>
+      {[1, 2, 3].map((row) => (
+        <View key={row} style={[styles.card, { minHeight: cardHeight }]}>
+          <SkeletonBlock width="55%" height={16} />
+          <SkeletonBlock width="80%" height={12} />
+        </View>
+      ))}
+    </View>
+  );
 }
 export const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#f3f5f4" },
-  content: { padding: 18, gap: 14, paddingBottom: 110 },
-  title: { fontSize: 32, fontWeight: "800", color: "#18221e" },
-  section: { fontSize: 19, fontWeight: "800", color: "#18221e" },
-  muted: { color: "#52615b", fontSize: 15 },
-  text: { color: "#18221e", fontSize: 16 },
-  card: { backgroundColor: "#fff", borderRadius: 18, padding: 16, gap: 10 },
+  screen: { flex: 1, backgroundColor: theme.background },
+  statusBarBlur: { position: "absolute", top: 0, left: 0, right: 0 },
+  content: { padding: theme.spacing, gap: theme.spacing, paddingBottom: 110 },
+  title: { fontSize: 28, fontWeight: "800", color: theme.slate },
+  section: { fontSize: 16, fontWeight: "800", color: theme.ink, textTransform: "uppercase" },
+  muted: { color: theme.muted, fontSize: 15 },
+  text: { color: theme.ink, fontSize: 16 },
+  card: {
+    backgroundColor: theme.surface,
+    borderRadius: 9,
+    padding: 16,
+    gap: 16,
+    boxShadow: "0px 3px 7px rgba(0, 0, 0, 0.12)",
+  },
   button: {
-    backgroundColor: teal,
-    borderRadius: 12,
+    backgroundColor: theme.teal,
+    borderRadius: 11,
     minHeight: 48,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 12,
   },
-  action: { fontWeight: "700", color: "#fff", fontSize: 16 },
+  action: { fontWeight: "700", color: "#092d31", fontSize: 16 },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
 });

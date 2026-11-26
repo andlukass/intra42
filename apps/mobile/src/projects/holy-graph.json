@@ -1,0 +1,1316 @@
+{
+  "nodes": [
+    {
+      "id": 2199,
+      "name": "Piscine Symfony",
+      "slug": "piscine-symfony",
+      "x": 1986,
+      "y": 3557,
+      "kind": "piscine"
+    },
+    {
+      "id": 2179,
+      "name": "Piscine RoR",
+      "slug": "piscine-ror",
+      "x": 1986,
+      "y": 3499,
+      "kind": "piscine"
+    },
+    {
+      "id": 2189,
+      "name": "Piscine Django",
+      "slug": "piscine-django",
+      "x": 1985,
+      "y": 3442,
+      "kind": "piscine"
+    },
+    { "id": 2077, "name": "matrix", "slug": "matrix", "x": 1852, "y": 2803, "kind": "project" },
+    { "id": 2355, "name": "Mobile", "slug": "mobile", "x": 2156, "y": 3673, "kind": "piscine" },
+    { "id": 1330, "name": "libasm", "slug": "libasm", "x": 3960, "y": 2468, "kind": "project" },
+    {
+      "id": 1314,
+      "name": "Libft",
+      "slug": "42cursus-libft",
+      "x": 3001,
+      "y": 3000,
+      "kind": "project"
+    },
+    {
+      "id": 1343,
+      "name": "CPP Module 05",
+      "slug": "cpp-module-05",
+      "x": 2324,
+      "y": 3302,
+      "kind": "project"
+    },
+    {
+      "id": 1346,
+      "name": "CPP Module 08",
+      "slug": "cpp-module-08",
+      "x": 2238,
+      "y": 3434,
+      "kind": "project"
+    },
+    {
+      "id": 1344,
+      "name": "CPP Module 06",
+      "slug": "cpp-module-06",
+      "x": 2399,
+      "y": 3380,
+      "kind": "project"
+    },
+    {
+      "id": 1339,
+      "name": "CPP Module 01",
+      "slug": "cpp-module-01",
+      "x": 3283,
+      "y": 2496,
+      "kind": "project"
+    },
+    {
+      "id": 1338,
+      "name": "CPP Module 00",
+      "slug": "cpp-module-00",
+      "x": 3383,
+      "y": 2502,
+      "kind": "project"
+    },
+    {
+      "id": 2309,
+      "name": "CPP Module 09",
+      "slug": "cpp-module-09",
+      "x": 2222,
+      "y": 3332,
+      "kind": "project"
+    },
+    {
+      "id": 1345,
+      "name": "CPP Module 07",
+      "slug": "cpp-module-07",
+      "x": 2337,
+      "y": 3466,
+      "kind": "project"
+    },
+    {
+      "id": 1340,
+      "name": "CPP Module 02",
+      "slug": "cpp-module-02",
+      "x": 3276,
+      "y": 2398,
+      "kind": "project"
+    },
+    {
+      "id": 1341,
+      "name": "CPP Module 03",
+      "slug": "cpp-module-03",
+      "x": 3358,
+      "y": 2348,
+      "kind": "project"
+    },
+    {
+      "id": 1342,
+      "name": "CPP Module 04",
+      "slug": "cpp-module-04",
+      "x": 3425,
+      "y": 2412,
+      "kind": "project"
+    },
+    { "id": 1332, "name": "webserv", "slug": "webserv", "x": 2541, "y": 2305, "kind": "project" },
+    { "id": 1336, "name": "ft_irc", "slug": "ft_irc", "x": 2629, "y": 2257, "kind": "project" },
+    {
+      "id": 1337,
+      "name": "ft_transcendence",
+      "slug": "ft_transcendence",
+      "x": 3766,
+      "y": 3639,
+      "kind": "project"
+    },
+    {
+      "id": 1983,
+      "name": "Inception",
+      "slug": "inception",
+      "x": 3457,
+      "y": 3692,
+      "kind": "project"
+    },
+    {
+      "id": 2007,
+      "name": "NetPractice",
+      "slug": "netpractice",
+      "x": 2672,
+      "y": 3577,
+      "kind": "project"
+    },
+    {
+      "id": 1327,
+      "name": "get_next_line",
+      "slug": "42cursus-get_next_line",
+      "x": 3001,
+      "y": 3165,
+      "kind": "project"
+    },
+    {
+      "id": 1316,
+      "name": "ft_printf",
+      "slug": "42cursus-ft_printf",
+      "x": 3144,
+      "y": 2916,
+      "kind": "project"
+    },
+    {
+      "id": 1994,
+      "name": "Born2beroot",
+      "slug": "born2beroot",
+      "x": 2859,
+      "y": 2919,
+      "kind": "project"
+    },
+    {
+      "id": 1471,
+      "name": "push_swap",
+      "slug": "42cursus-push_swap",
+      "x": 2794,
+      "y": 2740,
+      "kind": "project"
+    },
+    {
+      "id": 2620,
+      "name": "Disco Piscine - Python - Module 8",
+      "slug": "disco-piscine-python-module-8",
+      "x": 3556,
+      "y": 2878,
+      "kind": "project"
+    },
+    {
+      "id": 1656,
+      "name": "Part_Time II",
+      "slug": "part_time-ii",
+      "x": 2525,
+      "y": 4162,
+      "kind": "project"
+    },
+    {
+      "id": 1644,
+      "name": "Work Experience II",
+      "slug": "work-experience-ii",
+      "x": 2117,
+      "y": 4160,
+      "kind": "project"
+    },
+    {
+      "id": 1650,
+      "name": "Part_Time I",
+      "slug": "part_time-i",
+      "x": 2375,
+      "y": 4160,
+      "kind": "project"
+    },
+    {
+      "id": 1662,
+      "name": "Startup Experience",
+      "slug": "startup-experience",
+      "x": 1983,
+      "y": 4164,
+      "kind": "project"
+    },
+    {
+      "id": 1638,
+      "name": "Work Experience I",
+      "slug": "work-experience-i",
+      "x": 2238,
+      "y": 4162,
+      "kind": "project"
+    },
+    {
+      "id": 2531,
+      "name": "ft_kleene",
+      "slug": "ft_kleene",
+      "x": 1744,
+      "y": 2669,
+      "kind": "project"
+    },
+    { "id": 2752, "name": "Ecomesh", "slug": "ecomesh", "x": 2338, "y": 2142, "kind": "project" },
+    {
+      "id": 1403,
+      "name": "ft_turing",
+      "slug": "42cursus-ft_turing",
+      "x": 3830,
+      "y": 3884,
+      "kind": "project"
+    },
+    {
+      "id": 1447,
+      "name": "ft_shield",
+      "slug": "42cursus-ft_shield",
+      "x": 3385,
+      "y": 1827,
+      "kind": "project"
+    },
+    {
+      "id": 1479,
+      "name": "ft_ls",
+      "slug": "42cursus-ft_ls",
+      "x": 4075,
+      "y": 3261,
+      "kind": "project"
+    },
+    {
+      "id": 1415,
+      "name": "ft_linux",
+      "slug": "42cursus-ft_linux",
+      "x": 4049,
+      "y": 2759,
+      "kind": "project"
+    },
+    {
+      "id": 1379,
+      "name": "ft_hangouts",
+      "slug": "42cursus-ft_hangouts",
+      "x": 2248,
+      "y": 3790,
+      "kind": "project"
+    },
+    {
+      "id": 1407,
+      "name": "ft_ality",
+      "slug": "42cursus-ft_ality",
+      "x": 3943,
+      "y": 3992,
+      "kind": "project"
+    },
+    {
+      "id": 1437,
+      "name": "fix-me",
+      "slug": "42cursus-fix-me",
+      "x": 4143,
+      "y": 3727,
+      "kind": "project"
+    },
+    {
+      "id": 1423,
+      "name": "filesystem",
+      "slug": "42cursus-filesystem",
+      "x": 4301,
+      "y": 2396,
+      "kind": "project"
+    },
+    {
+      "id": 1430,
+      "name": "famine",
+      "slug": "42cursus-famine",
+      "x": 3121,
+      "y": 1658,
+      "kind": "project"
+    },
+    {
+      "id": 1384,
+      "name": "expert-system",
+      "slug": "42cursus-expert-system",
+      "x": 1607,
+      "y": 3145,
+      "kind": "project"
+    },
+    {
+      "id": 1422,
+      "name": "drivers-and-interrupts",
+      "slug": "42cursus-drivers-and-interrupts",
+      "x": 4179,
+      "y": 2479,
+      "kind": "project"
+    },
+    {
+      "id": 1418,
+      "name": "dr-quine",
+      "slug": "42cursus-dr-quine",
+      "x": 3033,
+      "y": 1924,
+      "kind": "project"
+    },
+    {
+      "id": 1458,
+      "name": "doom-nukem",
+      "slug": "42cursus-doom-nukem",
+      "x": 3698,
+      "y": 3996,
+      "kind": "project"
+    },
+    {
+      "id": 1445,
+      "name": "death",
+      "slug": "42cursus-death",
+      "x": 3115,
+      "y": 1500,
+      "kind": "project"
+    },
+    {
+      "id": 1405,
+      "name": "darkly",
+      "slug": "42cursus-darkly",
+      "x": 1574,
+      "y": 3576,
+      "kind": "project"
+    },
+    {
+      "id": 1475,
+      "name": "corewar",
+      "slug": "42cursus-corewar",
+      "x": 3664,
+      "y": 1814,
+      "kind": "project"
+    },
+    {
+      "id": 1396,
+      "name": "camagru",
+      "slug": "42cursus-camagru",
+      "x": 1928,
+      "y": 3676,
+      "kind": "project"
+    },
+    {
+      "id": 1389,
+      "name": "bomberman",
+      "slug": "42cursus-bomberman",
+      "x": 3432,
+      "y": 4197,
+      "kind": "project"
+    },
+    {
+      "id": 1446,
+      "name": "boot2root",
+      "slug": "42cursus-boot2root",
+      "x": 3881,
+      "y": 1995,
+      "kind": "project"
+    },
+    {
+      "id": 1435,
+      "name": "avaj-launcher",
+      "slug": "42cursus-avaj-launcher",
+      "x": 3914,
+      "y": 3561,
+      "kind": "project"
+    },
+    {
+      "id": 2743,
+      "name": "Agent smith",
+      "slug": "42cursus-agent-smith",
+      "x": 1502,
+      "y": 2433,
+      "kind": "project"
+    },
+    {
+      "id": 1854,
+      "name": "42sh",
+      "slug": "42cursus-42sh",
+      "x": 3534,
+      "y": 1902,
+      "kind": "project"
+    },
+    {
+      "id": 1400,
+      "name": "ft_nmap",
+      "slug": "42cursus-ft_nmap",
+      "x": 2542,
+      "y": 1446,
+      "kind": "project"
+    },
+    {
+      "id": 1470,
+      "name": "lem_in",
+      "slug": "42cursus-lem_in",
+      "x": 1864,
+      "y": 2932,
+      "kind": "project"
+    },
+    {
+      "id": 2623,
+      "name": "ft_resume",
+      "slug": "42_collaborative_resume",
+      "x": 2435,
+      "y": 3921,
+      "kind": "project"
+    },
+    {
+      "id": 2098,
+      "name": "ft_kalman",
+      "slug": "ft_kalman",
+      "x": 1707,
+      "y": 2802,
+      "kind": "project"
+    },
+    {
+      "id": 1433,
+      "name": "computorv2",
+      "slug": "42cursus-computorv2",
+      "x": 1840,
+      "y": 2566,
+      "kind": "project"
+    },
+    {
+      "id": 1382,
+      "name": "computorv1",
+      "slug": "42cursus-computorv1",
+      "x": 1992,
+      "y": 2616,
+      "kind": "project"
+    },
+    {
+      "id": 2225,
+      "name": "Ftl_quantum",
+      "slug": "ftl_quantum",
+      "x": 2042,
+      "y": 2504,
+      "kind": "project"
+    },
+    {
+      "id": 1390,
+      "name": "scop",
+      "slug": "42cursus-scop",
+      "x": 3252,
+      "y": 4057,
+      "kind": "project"
+    },
+    {
+      "id": 2748,
+      "name": "Supercharge",
+      "slug": "supercharge",
+      "x": 1920,
+      "y": 2444,
+      "kind": "project"
+    },
+    {
+      "id": 1453,
+      "name": "dslr",
+      "slug": "42cursus-dslr",
+      "x": 1844,
+      "y": 2211,
+      "kind": "project"
+    },
+    {
+      "id": 1391,
+      "name": "ft_linear_regression",
+      "slug": "42cursus-ft_linear_regression",
+      "x": 1976,
+      "y": 2165,
+      "kind": "project"
+    },
+    {
+      "id": 1457,
+      "name": "multilayer-perceptron",
+      "slug": "42cursus-multilayer-perceptron",
+      "x": 1889,
+      "y": 2054,
+      "kind": "project"
+    },
+    {
+      "id": 1460,
+      "name": "total-perspective-vortex",
+      "slug": "42cursus-total-perspective-vortex",
+      "x": 1770,
+      "y": 2079,
+      "kind": "project"
+    },
+    {
+      "id": 2372,
+      "name": "Leaffliction",
+      "slug": "leaffliction",
+      "x": 1687,
+      "y": 2185,
+      "kind": "project"
+    },
+    {
+      "id": 2551,
+      "name": "Learn2Slither",
+      "slug": "learn2slither",
+      "x": 1713,
+      "y": 2315,
+      "kind": "project"
+    },
+    {
+      "id": 2750,
+      "name": "Inception of wisdom",
+      "slug": "inception-of-wisdom",
+      "x": 1853,
+      "y": 1866,
+      "kind": "project"
+    },
+    {
+      "id": 2746,
+      "name": "Inception of context",
+      "slug": "inception-of-context",
+      "x": 2044,
+      "y": 1835,
+      "kind": "project"
+    },
+    { "id": 2747, "name": "ft_lgtm", "slug": "ft_lgtm", "x": 2139, "y": 1947, "kind": "project" },
+    {
+      "id": 1414,
+      "name": "cloud-1",
+      "slug": "42cursus-cloud-1",
+      "x": 2224,
+      "y": 2041,
+      "kind": "project"
+    },
+    {
+      "id": 2064,
+      "name": "Inception-of-Things",
+      "slug": "inception-of-things",
+      "x": 2126,
+      "y": 2209,
+      "kind": "project"
+    },
+    {
+      "id": 1450,
+      "name": "ft_ssl_rsa",
+      "slug": "42cursus-ft_ssl_rsa",
+      "x": 2790,
+      "y": 1445,
+      "kind": "project"
+    },
+    {
+      "id": 1452,
+      "name": "ft_ssl_des",
+      "slug": "42cursus-ft_ssl_des",
+      "x": 2793,
+      "y": 1551,
+      "kind": "project"
+    },
+    {
+      "id": 1451,
+      "name": "ft_ssl_md5",
+      "slug": "42cursus-ft_ssl_md5",
+      "x": 2792,
+      "y": 1659,
+      "kind": "project"
+    },
+    {
+      "id": 1397,
+      "name": "ft_ping",
+      "slug": "42cursus-ft_ping",
+      "x": 2799,
+      "y": 1847,
+      "kind": "project"
+    },
+    {
+      "id": 1399,
+      "name": "ft_traceroute",
+      "slug": "42cursus-ft_traceroute",
+      "x": 2549,
+      "y": 1849,
+      "kind": "project"
+    },
+    {
+      "id": 1840,
+      "name": "ft_malcolm",
+      "slug": "ft_malcolm",
+      "x": 2723,
+      "y": 1932,
+      "kind": "project"
+    },
+    {
+      "id": 2071,
+      "name": " Bgp At Doors of Autonomous Systems is Simple",
+      "slug": "bgp-at-doors-of-autonomous-systems-is-simple",
+      "x": 2599,
+      "y": 1954,
+      "kind": "project"
+    },
+    {
+      "id": 2295,
+      "name": "Piscine Data Science",
+      "slug": "piscine-data-science",
+      "x": 2068,
+      "y": 2352,
+      "kind": "piscine"
+    },
+    {
+      "id": 1635,
+      "name": "Open Project",
+      "slug": "open-project",
+      "x": 2668,
+      "y": 4055,
+      "kind": "project"
+    },
+    { "id": 1467, "name": "nm", "slug": "nm", "x": 4112, "y": 3047, "kind": "project" },
+    { "id": 2550, "name": "libftpp", "slug": "libftpp", "x": 4189, "y": 3559, "kind": "project" },
+    { "id": 2381, "name": "ft_yacc", "slug": "ft_yacc", "x": 3998, "y": 2271, "kind": "project" },
+    {
+      "id": 1962,
+      "name": "ft_newton",
+      "slug": "ft_newton",
+      "x": 3428,
+      "y": 4366,
+      "kind": "project"
+    },
+    {
+      "id": 2126,
+      "name": "ft_minecraft",
+      "slug": "ft_minecraft",
+      "x": 3580,
+      "y": 4168,
+      "kind": "project"
+    },
+    { "id": 2380, "name": "ft_lex", "slug": "ft_lex", "x": 3880, "y": 2344, "kind": "project" },
+    {
+      "id": 1883,
+      "name": "freddie-mercury",
+      "slug": "freddie-mercury",
+      "x": 2746,
+      "y": 4373,
+      "kind": "project"
+    },
+    { "id": 2606, "name": "B", "slug": "b", "x": 4081, "y": 2376, "kind": "project" },
+    {
+      "id": 2346,
+      "name": "Cybersecurity",
+      "slug": "cybersecurity",
+      "x": 3787,
+      "y": 2237,
+      "kind": "piscine"
+    },
+    { "id": 2625, "name": "cc1", "slug": "cc1", "x": 4151, "y": 2259, "kind": "project" },
+    { "id": 2763, "name": "AI Rushes", "slug": "ai-rushes", "x": 2415, "y": 3990, "kind": "rush" },
+    {
+      "id": 2371,
+      "name": "Abstract_data",
+      "slug": "abstract_data",
+      "x": 4389,
+      "y": 3567,
+      "kind": "project"
+    },
+    {
+      "id": 1463,
+      "name": "zappy",
+      "slug": "42cursus-zappy",
+      "x": 3001,
+      "y": 4352,
+      "kind": "project"
+    },
+    { "id": 1408, "name": "xv", "slug": "42cursus-xv", "x": 2786, "y": 4259, "kind": "project" },
+    {
+      "id": 1419,
+      "name": "woody-woodpacker",
+      "slug": "42cursus-woody-woodpacker",
+      "x": 3126,
+      "y": 1827,
+      "kind": "project"
+    },
+    { "id": 1444, "name": "war", "slug": "42cursus-war", "x": 3386, "y": 1499, "kind": "project" },
+    {
+      "id": 1456,
+      "name": "userspace_digressions",
+      "slug": "42cursus-userspace_digressions",
+      "x": 4084,
+      "y": 2546,
+      "kind": "project"
+    },
+    {
+      "id": 1381,
+      "name": "taskmaster",
+      "slug": "42cursus-taskmaster",
+      "x": 4137,
+      "y": 3377,
+      "kind": "project"
+    },
+    {
+      "id": 1436,
+      "name": "swingy",
+      "slug": "42cursus-swingy",
+      "x": 4035,
+      "y": 3648,
+      "kind": "project"
+    },
+    {
+      "id": 1406,
+      "name": "swifty-proteins",
+      "slug": "42cursus-swifty-proteins",
+      "x": 1934,
+      "y": 3852,
+      "kind": "project"
+    },
+    {
+      "id": 1395,
+      "name": "swifty-companion",
+      "slug": "42cursus-swifty-companion",
+      "x": 2037,
+      "y": 3760,
+      "kind": "project"
+    },
+    {
+      "id": 1388,
+      "name": "strace",
+      "slug": "42cursus-strace",
+      "x": 4424,
+      "y": 3332,
+      "kind": "project"
+    },
+    {
+      "id": 1404,
+      "name": "snow-crash",
+      "slug": "42cursus-snow-crash",
+      "x": 3884,
+      "y": 2143,
+      "kind": "project"
+    },
+    {
+      "id": 1454,
+      "name": "shaderpixel",
+      "slug": "42cursus-shaderpixel",
+      "x": 3305,
+      "y": 4369,
+      "kind": "project"
+    },
+    {
+      "id": 1393,
+      "name": "rubik",
+      "slug": "42cursus-rubik",
+      "x": 1867,
+      "y": 3126,
+      "kind": "project"
+    },
+    {
+      "id": 1420,
+      "name": "matt-daemon",
+      "slug": "42cursus-matt-daemon",
+      "x": 4325,
+      "y": 3440,
+      "kind": "project"
+    },
+    { "id": 1855, "name": "rt", "slug": "42cursus-rt", "x": 3001, "y": 4206, "kind": "project" },
+    {
+      "id": 1428,
+      "name": "red-tetris",
+      "slug": "42cursus-red-tetris",
+      "x": 1766,
+      "y": 3755,
+      "kind": "project"
+    },
+    {
+      "id": 1417,
+      "name": "rainfall",
+      "slug": "42cursus-rainfall",
+      "x": 3986,
+      "y": 2061,
+      "kind": "project"
+    },
+    {
+      "id": 1421,
+      "name": "process-and-memory",
+      "slug": "42cursus-process-and-memory",
+      "x": 4301,
+      "y": 2533,
+      "kind": "project"
+    },
+    {
+      "id": 2228,
+      "name": "Piscine ocaml",
+      "slug": "42cursus-piscine-ocaml",
+      "x": 3739,
+      "y": 3792,
+      "kind": "piscine"
+    },
+    {
+      "id": 1443,
+      "name": "pestilence",
+      "slug": "42cursus-pestilence",
+      "x": 3388,
+      "y": 1656,
+      "kind": "project"
+    },
+    {
+      "id": 1410,
+      "name": "particle-system",
+      "slug": "42cursus-particle-system",
+      "x": 3189,
+      "y": 4369,
+      "kind": "project"
+    },
+    {
+      "id": 1448,
+      "name": "override",
+      "slug": "42cursus-override",
+      "x": 4085,
+      "y": 1981,
+      "kind": "project"
+    },
+    {
+      "id": 1386,
+      "name": "nibbler",
+      "slug": "42cursus-nibbler",
+      "x": 4456,
+      "y": 3129,
+      "kind": "project"
+    },
+    {
+      "id": 1385,
+      "name": "n-puzzle",
+      "slug": "42cursus-n-puzzle",
+      "x": 1866,
+      "y": 3029,
+      "kind": "project"
+    },
+    {
+      "id": 1427,
+      "name": "music-room",
+      "slug": "42cursus-music-room",
+      "x": 1631,
+      "y": 3701,
+      "kind": "project"
+    },
+    {
+      "id": 1462,
+      "name": "mod1",
+      "slug": "42cursus-mod1",
+      "x": 3451,
+      "y": 3961,
+      "kind": "project"
+    },
+    {
+      "id": 1401,
+      "name": "matcha",
+      "slug": "42cursus-matcha",
+      "x": 1612,
+      "y": 3442,
+      "kind": "project"
+    },
+    {
+      "id": 1468,
+      "name": "malloc",
+      "slug": "42cursus-malloc",
+      "x": 4173,
+      "y": 3171,
+      "kind": "project"
+    },
+    {
+      "id": 1416,
+      "name": "little-penguin-1",
+      "slug": "42cursus-little-penguin-1",
+      "x": 4172,
+      "y": 2682,
+      "kind": "project"
+    },
+    {
+      "id": 1464,
+      "name": "lem-ipc",
+      "slug": "42cursus-lem-ipc",
+      "x": 4320,
+      "y": 3199,
+      "kind": "project"
+    },
+    {
+      "id": 1441,
+      "name": "kfs-9",
+      "slug": "42cursus-kfs-9",
+      "x": 4684,
+      "y": 2861,
+      "kind": "project"
+    },
+    {
+      "id": 1392,
+      "name": "krpsim",
+      "slug": "42cursus-krpsim",
+      "x": 1602,
+      "y": 3036,
+      "kind": "project"
+    },
+    {
+      "id": 1442,
+      "name": "kfs-x",
+      "slug": "42cursus-kfs-x",
+      "x": 4787,
+      "y": 2756,
+      "kind": "project"
+    },
+    {
+      "id": 1440,
+      "name": "kfs-8",
+      "slug": "42cursus-kfs-8",
+      "x": 4687,
+      "y": 2690,
+      "kind": "project"
+    },
+    {
+      "id": 1425,
+      "name": "kfs-1",
+      "slug": "42cursus-kfs-1",
+      "x": 4166,
+      "y": 2857,
+      "kind": "project"
+    },
+    {
+      "id": 1402,
+      "name": "hypertube",
+      "slug": "42cursus-hypertube",
+      "x": 1461,
+      "y": 3424,
+      "kind": "project"
+    },
+    {
+      "id": 1409,
+      "name": "in-the-shadows",
+      "slug": "42cursus-in-the-shadows",
+      "x": 2829,
+      "y": 4138,
+      "kind": "project"
+    },
+    {
+      "id": 1394,
+      "name": "humangl",
+      "slug": "42cursus-humangl",
+      "x": 3294,
+      "y": 4198,
+      "kind": "project"
+    },
+    {
+      "id": 1429,
+      "name": "h42n42",
+      "slug": "42cursus-h42n42",
+      "x": 4017,
+      "y": 3879,
+      "kind": "project"
+    },
+    {
+      "id": 1438,
+      "name": "kfs-6",
+      "slug": "42cursus-kfs-6",
+      "x": 4554,
+      "y": 2691,
+      "kind": "project"
+    },
+    {
+      "id": 1439,
+      "name": "kfs-7",
+      "slug": "42cursus-kfs-7",
+      "x": 4554,
+      "y": 2863,
+      "kind": "project"
+    },
+    {
+      "id": 1432,
+      "name": "kfs-5",
+      "slug": "42cursus-kfs-5",
+      "x": 4419,
+      "y": 2862,
+      "kind": "project"
+    },
+    {
+      "id": 1431,
+      "name": "kfs-4",
+      "slug": "42cursus-kfs-4",
+      "x": 4419,
+      "y": 2690,
+      "kind": "project"
+    },
+    {
+      "id": 1426,
+      "name": "kfs-3",
+      "slug": "42cursus-kfs-3",
+      "x": 4295,
+      "y": 2859,
+      "kind": "project"
+    },
+    {
+      "id": 1424,
+      "name": "kfs-2",
+      "slug": "42cursus-kfs-2",
+      "x": 4299,
+      "y": 2683,
+      "kind": "project"
+    },
+    {
+      "id": 1455,
+      "name": "guimp",
+      "slug": "42cursus-guimp",
+      "x": 3570,
+      "y": 4015,
+      "kind": "project"
+    },
+    {
+      "id": 1383,
+      "name": "gomoku",
+      "slug": "42cursus-gomoku",
+      "x": 1597,
+      "y": 2918,
+      "kind": "project"
+    },
+    {
+      "id": 1449,
+      "name": "ft_vox",
+      "slug": "42cursus-ft_vox",
+      "x": 3392,
+      "y": 4060,
+      "kind": "project"
+    },
+    {
+      "id": 2553,
+      "name": "Very_Real_Engine",
+      "slug": "very_real_engine",
+      "x": 3655,
+      "y": 4380,
+      "kind": "project"
+    },
+    {
+      "id": 2393,
+      "name": "UnleashTheBox",
+      "slug": "unleashthebox",
+      "x": 4006,
+      "y": 1889,
+      "kind": "project"
+    },
+    { "id": 2288, "name": "Unity", "slug": "unity", "x": 2855, "y": 4029, "kind": "piscine" },
+    {
+      "id": 2719,
+      "name": "TokenZwap",
+      "slug": "tokenzwap",
+      "x": 1635,
+      "y": 3299,
+      "kind": "project"
+    },
+    {
+      "id": 2485,
+      "name": "Tokenizer",
+      "slug": "tokenizer",
+      "x": 1960,
+      "y": 3282,
+      "kind": "project"
+    },
+    {
+      "id": 2600,
+      "name": "TokenizeArt",
+      "slug": "tokenizeart",
+      "x": 1812,
+      "y": 3313,
+      "kind": "project"
+    },
+    {
+      "id": 2097,
+      "name": "tinky-winkey",
+      "slug": "tinky-winkey",
+      "x": 3287,
+      "y": 1933,
+      "kind": "project"
+    },
+    { "id": 2749, "name": "RetroEmu", "slug": "retroemu", "x": 4588, "y": 3260, "kind": "project" },
+    {
+      "id": 2267,
+      "name": "Python for Data Science",
+      "slug": "python-for-data-science",
+      "x": 2068,
+      "y": 2400,
+      "kind": "piscine"
+    },
+    {
+      "id": 2364,
+      "name": "Piscine Object",
+      "slug": "piscine-object",
+      "x": 4041,
+      "y": 3500,
+      "kind": "piscine"
+    },
+    {
+      "id": 2773,
+      "name": "Piscine Deep Learning",
+      "slug": "piscine-deep-learning",
+      "x": 2068,
+      "y": 2305,
+      "kind": "piscine"
+    },
+    {
+      "id": 2397,
+      "name": "Eu Aceito Lisboa",
+      "slug": "eu-aceito-lisboa",
+      "x": 1000,
+      "y": 2800,
+      "kind": "project"
+    },
+    {
+      "id": 1320,
+      "name": "Exam Rank 02",
+      "slug": "exam-rank-02",
+      "x": 3017,
+      "y": 3330,
+      "kind": "exam"
+    },
+    {
+      "id": 1321,
+      "name": "Exam Rank 03",
+      "slug": "exam-rank-03",
+      "x": 3036,
+      "y": 2497,
+      "kind": "exam"
+    },
+    {
+      "id": 1322,
+      "name": "Exam Rank 04",
+      "slug": "exam-rank-04",
+      "x": 3577,
+      "y": 3333,
+      "kind": "exam"
+    },
+    {
+      "id": 1324,
+      "name": "Exam Rank 06",
+      "slug": "exam-rank-06",
+      "x": 2275,
+      "y": 2361,
+      "kind": "exam"
+    },
+    {
+      "id": 1323,
+      "name": "Exam Rank 05",
+      "slug": "exam-rank-05",
+      "x": 3722,
+      "y": 2583,
+      "kind": "piscine"
+    },
+    {
+      "id": 1331,
+      "name": "minishell",
+      "slug": "42cursus-minishell",
+      "x": 3407,
+      "y": 3284,
+      "kind": "project"
+    },
+    {
+      "id": 1334,
+      "name": "Philosophers",
+      "slug": "42cursus-philosophers",
+      "x": 2549,
+      "y": 3210,
+      "kind": "project"
+    },
+    { "id": 2008, "name": "FdF", "slug": "42cursus-fdf", "x": 3319, "y": 3085, "kind": "project" },
+    {
+      "id": 1476,
+      "name": "fract-ol",
+      "slug": "42cursus-fract-ol",
+      "x": 3282,
+      "y": 3179,
+      "kind": "project"
+    }
+  ],
+  "edges": [
+    [1852, 2803, 2021, 2798],
+    [3960, 2468, 3875, 2528],
+    [3556, 2878, 3558, 3012],
+    [2375, 4160, 2310, 4224],
+    [2238, 4162, 2314, 4226],
+    [1744, 2669, 1879, 2694],
+    [2338, 2142, 2399, 2200],
+    [3830, 3884, 3670, 3739],
+    [3385, 1827, 3126, 1827],
+    [4075, 3261, 4003, 3144],
+    [4049, 2759, 3969, 2766],
+    [2248, 3790, 2153, 3675],
+    [3943, 3992, 3830, 3884],
+    [4143, 3727, 4035, 3648],
+    [4301, 2396, 4301, 2533],
+    [4301, 2396, 4179, 2479],
+    [3121, 1658, 3126, 1827],
+    [1607, 3145, 1867, 3031],
+    [4179, 2479, 4172, 2682],
+    [3033, 1924, 3123, 1924],
+    [3698, 3996, 3635, 3891],
+    [3115, 1500, 3386, 1499],
+    [2101, 3434, 1783, 3570],
+    [1574, 3576, 1787, 3568],
+    [1928, 3676, 1787, 3568],
+    [3432, 4197, 3294, 4198],
+    [3881, 1995, 3884, 2143],
+    [3914, 3561, 3853, 3512],
+    [1502, 2433, 1631, 2434],
+    [3534, 1902, 3470, 2024],
+    [2542, 1446, 2549, 1849],
+    [2435, 3921, 2481, 3855],
+    [1707, 2802, 1811, 2803],
+    [1840, 2566, 1992, 2616],
+    [1992, 2616, 2067, 2647],
+    [2042, 2504, 2111, 2549],
+    [3252, 4057, 3234, 3973],
+    [1920, 2444, 2042, 2504],
+    [1844, 2211, 2169, 2445],
+    [1976, 2165, 1914, 2262],
+    [1889, 2054, 1844, 2211],
+    [1770, 2079, 1844, 2211],
+    [1687, 2185, 1846, 2211],
+    [1713, 2315, 1843, 2212],
+    [1853, 1866, 2327, 2262],
+    [2044, 1835, 1947, 1945],
+    [2139, 1947, 2060, 2037],
+    [2224, 2041, 2212, 2167],
+    [2126, 2209, 2213, 2167],
+    [2790, 1445, 2793, 1551],
+    [2793, 1551, 2792, 1659],
+    [2792, 1659, 2799, 1847],
+    [2799, 1847, 2809, 2020],
+    [2549, 1849, 2799, 1847],
+    [2723, 1932, 2748, 2036],
+    [2599, 1954, 2647, 2068],
+    [2668, 4055, 2704, 3953],
+    [4112, 3047, 4002, 3140],
+    [4189, 3559, 4039, 3504],
+    [3998, 2271, 3884, 2342],
+    [3998, 2271, 4152, 2255],
+    [3428, 4366, 3290, 4201],
+    [3580, 4168, 3392, 4060],
+    [3880, 2344, 3795, 2394],
+    [2746, 4373, 2786, 4259],
+    [4081, 2376, 3961, 2467],
+    [4081, 2376, 4155, 2259],
+    [4389, 3567, 4189, 3559],
+    [2786, 4259, 2829, 4138],
+    [3126, 1827, 3126, 2009],
+    [3386, 1499, 3388, 1656],
+    [4084, 2546, 4172, 2682],
+    [4137, 3377, 3947, 3309],
+    [4035, 3648, 3914, 3561],
+    [1934, 3852, 2037, 3760],
+    [2037, 3760, 2220, 3624],
+    [4424, 3332, 4320, 3199],
+    [3884, 2143, 3716, 2302],
+    [3305, 4369, 3294, 4218],
+    [4325, 3440, 4137, 3377],
+    [3001, 4206, 3024, 4085],
+    [1766, 3755, 1785, 3568],
+    [3986, 2061, 3884, 2143],
+    [4301, 2533, 4172, 2682],
+    [3388, 1656, 3121, 1658],
+    [3189, 4369, 3291, 4218],
+    [4085, 1981, 3986, 2061],
+    [4456, 3129, 4320, 3202],
+    [1866, 3029, 2002, 3028],
+    [1631, 3701, 1785, 3568],
+    [3451, 3961, 3519, 3924],
+    [1612, 3442, 1785, 3567],
+    [4173, 3171, 3988, 3139],
+    [4172, 2682, 4049, 2759],
+    [4320, 3199, 4173, 3171],
+    [4684, 2861, 4687, 2690],
+    [1602, 3036, 1817, 3033],
+    [4787, 2756, 4684, 2861],
+    [4687, 2690, 4554, 2863],
+    [4166, 2857, 4165, 2645],
+    [1461, 3424, 1612, 3442],
+    [2829, 4138, 2852, 3986],
+    [3294, 4198, 3252, 4057],
+    [4017, 3879, 3830, 3884],
+    [4554, 2691, 4419, 2862],
+    [4554, 2863, 4554, 2691],
+    [4419, 2862, 4419, 2690],
+    [4419, 2690, 4295, 2859],
+    [4295, 2859, 4299, 2683],
+    [4299, 2683, 4166, 2857],
+    [3570, 4015, 3489, 3873],
+    [1597, 2918, 1860, 3032],
+    [3392, 4060, 3249, 4059],
+    [3655, 4380, 3578, 4169],
+    [3655, 4380, 3426, 4368],
+    [4006, 1889, 3884, 1999],
+    [1635, 3299, 1816, 3311],
+    [1960, 3282, 2035, 3260],
+    [1812, 3313, 1959, 3283],
+    [3287, 1933, 3263, 2033],
+    [4588, 3260, 4318, 3202],
+    [4041, 3500, 3897, 3441]
+  ]
+}
