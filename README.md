@@ -27,6 +27,7 @@ the validated flow, local endpoints, session lifecycle, and current limits.
 | `npm run dev:web`, `npm run dev`, `npm run web` | Start the Vite development server |
 | `npm run build:web`, `npm run build` | Type-check and build the web app |
 | `npm run ios`, `npm run android` | Build and run the native app |
+| `npm run dev:all` | Start Metro and the native backend with combined/selectable service logs |
 | `npm run dev:mobile` | Start Metro for the native development build |
 | `npm run login:mobile` (`oauth:mobile` alias) | Start the native portal sign-in and data service |
 | `npm run preview` | Serve the production build locally |

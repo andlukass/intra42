@@ -58,6 +58,21 @@ npm run ios -- --device "iPhone 17"
 npm run android
 ```
 
+Use `npm run dev:all` to start both Metro and the local sign-in/API backend,
+including when the app uses an HTTPS proxy such as Tailscale. It loads
+`apps/mobile/.env` through the mobile start command. The backend listens on its
+configured `PORT` (default 8787); Metro defaults to 8081. The configured HTTPS
+address must already forward to that backend port.
+
+The terminal follows Delphi's service-log navigation: **0** shows both logs,
+**1** Metro, **2** Backend, and **q** the addresses. Combined logs are the default.
+Without an interactive terminal, both outputs stream with `[Metro]` and
+`[Backend]` prefixes. **Ctrl+C** stops both process groups, and a service failure
+stops its companion. Metro options can be forwarded with
+`npm run dev:all -- --port 8084`. Stop independently running Metro/backend commands
+before using `dev:all`; it does not take over unrelated processes. Expo's
+interactive keyboard shortcuts remain available through `dev:mobile`.
+
 Use `npm run dev:mobile` for an existing development build. With a local HTTP
 `EXPO_PUBLIC_INTRA42_OAUTH_URL`, it starts the sign-in/API service first, waits
 for `/health`, then starts Metro. It reuses an already healthy service; only a
