@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "workspaces": [
     "apps/web",
-    "apps/mobile"
+    "apps/mobile",
+    "packages/portal-server"
   ],
   "scripts": {
     "dev": "npm run dev:web --",

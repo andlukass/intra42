@@ -26,8 +26,12 @@ the agenda succeeded on November 25, 2026. The same test verified that the 42
 portal issued a refresh token, accepted its exchange, and served the agenda
 using the renewed access token.
 
-The implementation lives in [server/login.ts](server/login.ts), registered as a
-Vite development plugin in [vite.config.ts](vite.config.ts). The browser-side
+The Vite adapter lives in [server/login.ts](server/login.ts), registered in
+[vite.config.ts](vite.config.ts). The Chrome worker, refresh grants, calendar
+cookies, and request validation live in the shared
+[`packages/portal-server`](../../packages/portal-server) workspace, also used by
+the native sign-in service. The web endpoints retain their same-origin,
+loopback-only browser checks. The browser-side
 requests and token expiry checks live in [src/lib/intra.ts](src/lib/intra.ts).
 The form lives in [src/pages/SignIn.tsx](src/pages/SignIn.tsx). The app holds the current session in [src/App.tsx](src/App.tsx).
 
@@ -60,11 +64,12 @@ API hosts.
 5. After the profile document loads, the backend waits up to 20 seconds, within
    the overall login deadline, for an `oidc.user:*` entry in the portal's
    `sessionStorage`. It reads `access_token` and `expires_at`, verifies that the
-   token has time remaining, and returns `access_token` and `expires_in` to
-   the Intra42 tab. When the 42 token response includes a refresh token and
-   client ID, the backend keeps the refresh grant in memory and returns a
-   random local session ID with the access token. The server logs whether a
-   refresh token was issued without logging its value.
+   token has time remaining, and reads the stored refresh token and OIDC
+   authority/client ID. The official token response is a fallback if storage
+   does not include a refresh token. The backend requires a refresh grant and
+   verifies one exchange before completing sign-in. It keeps the rotated grant
+   server-side and returns the renewed access token and a random local session
+   ID to the Intra42 tab. Raw refresh tokens never reach the Intra42 client.
 6. The backend gives the official account avatar up to four seconds to load in
    the authenticated browser. It copies the image response from the 42 CDN into
    the login response. The dashboard uses that image for both avatars and keeps
@@ -157,7 +162,13 @@ calendar session. The official calendar cookies have their own lifetime.
   save the session without those fields. If storage is unavailable, the
   session lasts until the current document is unloaded.
 - Existing logins without a local session ID require one fresh sign-in.
-  Restarting Vite loses the in-memory refresh grants and calendar cookies.
+  Refresh grants and calendar cookies now survive Vite restarts through the
+  shared server's private temporary session file. The file uses `0600`
+  permissions inside a `0700` directory, and passwords are excluded. Logout and
+  renewal update it immediately. Each working directory uses its own file by
+  default; `INTRA42_SESSION_FILE` can select a file in a private directory.
+  Use one server process per file. Clearing the OS temporary directory still
+  requires signing in again.
 - The local endpoints require POST, an Origin matching the HTTP Host, and a
   loopback remote address. Responses use `Cache-Control: no-store`.
 - The backend permits one login at a time. A concurrent attempt receives HTTP 429.

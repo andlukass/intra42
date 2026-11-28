@@ -1,0 +1,24 @@
+{
+  "name": "@intra42/portal-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./login": "./login.ts",
+    "./refresh": "./refresh.ts",
+    "./slots": "./slots.ts",
+    "./http": "./http.ts",
+    "./session-store": "./session-store.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "playwright": "^1.63.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "typescript": "6.0.3"
+  }
+}
