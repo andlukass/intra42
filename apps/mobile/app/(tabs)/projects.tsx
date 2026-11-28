@@ -4,7 +4,7 @@ import Svg, { Path } from "react-native-svg";
 import { useProfile } from "../../src/api";
 import { useSession } from "../../src/session";
 import { theme } from "../../src/theme";
-import { QueryMessage, Screen, SkeletonList, styles } from "../../src/ui";
+import { QueryMessage, Screen, SkeletonBlock, styles } from "../../src/ui";
 
 const portal = "https://projects.intra.42.fr";
 const recommendations = [
@@ -45,18 +45,21 @@ function ProjectRow({
       onPress={onPress}
       style={({ pressed }) => [s.row, status && s.teamRow, pressed && s.pressed]}
     >
-      {status && (
-        <View style={s.teamIcon}>
-          <Svg width={18} height={18} viewBox="0 0 24 24" accessible={false}>
-            <Path fill={theme.tealText} d="M14 1 3 15h8l-1 8L21 9h-8l1-8Z" />
-          </Svg>
-        </View>
-      )}
+      <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false}>
+        <Path
+          fill="#fff"
+          d={
+            status
+              ? "M14 1 3 15h8l-1 8L21 9h-8l1-8Z"
+              : "m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"
+          }
+        />
+      </Svg>
       <View style={s.rowCopy}>
-        <Text style={[s.name, status && s.teamName]}>{name}</Text>
+        <Text style={s.name}>{name}</Text>
         {status && <Text style={s.status}>{status}</Text>}
       </View>
-      <Text style={s.link} accessible={false}>
+      <Text style={s.chevron} accessible={false}>
         ›
       </Text>
     </Pressable>
@@ -76,9 +79,6 @@ export default function Projects() {
 
   return (
     <Screen>
-      <Text accessibilityRole="header" style={styles.title}>
-        Projects
-      </Text>
       {!token ? (
         <Text style={styles.muted}>Sign in from Home to view your projects.</Text>
       ) : (
@@ -106,14 +106,31 @@ export default function Projects() {
               pending={profile.isPending}
               error={profile.error}
               empty="No open teams."
-              skeleton={<SkeletonList cardHeight={64} />}
+              skeleton={
+                <View
+                  style={s.teams}
+                  accessibilityLabel="Loading open teams"
+                  accessibilityState={{ busy: true }}
+                >
+                  {[0, 1, 2].map((index) => (
+                    <View key={index} style={[s.row, s.teamRow]}>
+                      <SkeletonBlock width={24} height={24} radius={3} color="#ffffff55" />
+                      <View style={s.rowCopy}>
+                        <SkeletonBlock width="70%" height={20} radius={3} color="#ffffff55" />
+                        <SkeletonBlock width="40%" height={17} radius={3} color="#ffffff55" />
+                      </View>
+                      <SkeletonBlock width={8} height={18} radius={3} color="#ffffff55" />
+                    </View>
+                  ))}
+                </View>
+              }
             />
           )}
           <View style={s.links}>
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push("/holy-graph")}
-              style={({ pressed }) => [s.shortcut, s.graphShortcut, pressed && s.pressed]}
+              style={({ pressed }) => [s.shortcut, pressed && s.pressed]}
             >
               <Text style={s.link}>Holy Graph</Text>
               <Text style={s.link} accessible={false}>
@@ -135,10 +152,8 @@ export default function Projects() {
             Recommended projects
           </Text>
           <View style={s.recommendations}>
-            {recommendations.map(({ name, slug }, index) => (
-              <View key={slug} style={index > 0 ? s.divider : undefined}>
-                <ProjectRow name={name} onPress={() => showProject(slug)} />
-              </View>
+            {recommendations.map(({ name, slug }) => (
+              <ProjectRow key={slug} name={name} onPress={() => showProject(slug)} />
             ))}
           </View>
         </>
@@ -151,41 +166,22 @@ const s = StyleSheet.create({
   heading: { color: theme.ink, fontSize: 18, fontWeight: "700" },
   teams: { gap: 8 },
   row: {
-    minHeight: 48,
+    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    backgroundColor: "#747474",
+    borderRadius: 4,
   },
-  teamRow: {
-    minHeight: 66,
-    backgroundColor: "#e8f7f7",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#c2e7e7",
-  },
-  teamIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    backgroundColor: "#d2efef",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowCopy: { flex: 1, gap: 3 },
-  name: { color: theme.ink, fontSize: 15, fontWeight: "500" },
-  teamName: { fontWeight: "700" },
-  status: { color: theme.tealText, fontSize: 13, fontWeight: "600" },
-  recommendations: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-    overflow: "hidden",
-  },
-  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderColor: theme.border },
-  pressed: { backgroundColor: "#e2f2f2" },
+  teamRow: { backgroundColor: theme.teal, minHeight: 70 },
+  rowCopy: { flex: 1, gap: 4 },
+  name: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  status: { color: "#fff", fontSize: 14, fontWeight: "500" },
+  chevron: { color: "#fff", fontSize: 22 },
+  recommendations: { gap: 8 },
+  pressed: { opacity: 0.75 },
   links: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
   shortcut: {
     minHeight: 44,
@@ -194,11 +190,8 @@ const s = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 9,
+    backgroundColor: theme.teal,
+    borderRadius: 2,
   },
-  link: { color: theme.tealText, fontSize: 14, fontWeight: "600", flexShrink: 1 },
-  graphShortcut: { borderColor: "#c2e7e7", backgroundColor: "#e8f7f7" },
+  link: { color: "#fff", fontSize: 14, fontWeight: "600", flexShrink: 1 },
 });

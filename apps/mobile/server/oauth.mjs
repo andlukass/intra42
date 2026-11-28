@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
+import { sessionStoreDescription } from "@intra42/portal-server/session-store";
+import { handlePortal, portalIdentity } from "./portal.ts";
 
 const {
   INTRA42_CLIENT_ID,
@@ -8,10 +10,10 @@ const {
   INTRA42_SCOPES = "public projects",
   PORT = "8787",
 } = process.env;
-if (!INTRA42_CLIENT_ID || !INTRA42_CLIENT_SECRET || !INTRA42_REDIRECT_URI) {
-  throw new Error("Configure INTRA42_CLIENT_ID, INTRA42_CLIENT_SECRET and INTRA42_REDIRECT_URI.");
+if (!INTRA42_CLIENT_ID || !INTRA42_CLIENT_SECRET) {
+  throw new Error("Configure INTRA42_CLIENT_ID and INTRA42_CLIENT_SECRET.");
 }
-const redirect = new URL(INTRA42_REDIRECT_URI);
+const redirect = new URL(INTRA42_REDIRECT_URI ?? `http://localhost:${PORT}/callback`);
 const loopback =
   redirect.protocol === "http:" &&
   ["localhost", "127.0.0.1"].includes(redirect.hostname) &&
@@ -87,7 +89,13 @@ function upstreamError(res, response, message) {
 }
 
 async function verifySession(req, res) {
+  const native = portalIdentity(req);
+  if (native) return native;
   const authorization = req.headers.authorization;
+  if (authorization?.startsWith("Bearer portal_")) {
+    send(res, 401, { error: "Your 42 session expired. Sign in again." });
+    return;
+  }
   if (!/^Bearer [^\s,]+$/i.test(authorization ?? "")) {
     send(res, 401, { error: "Sign in to view profiles." });
     return;
@@ -147,8 +155,8 @@ async function sendAvatar(req, res, userId, size) {
   const caller = await verifySession(req, res);
   if (!caller) return;
   let profile = caller;
-  if (userId !== null && Number(userId) !== caller.id) {
-    const response = await publicProfileResponse(userId);
+  if (!profile.image || (userId !== null && Number(userId) !== caller.id)) {
+    const response = await publicProfileResponse(userId ?? String(caller.id));
     if (!response.ok)
       return upstreamError(res, response, "42 could not serve this public profile.");
     profile = await response.json();
@@ -169,6 +177,10 @@ async function sendAvatar(req, res, userId, size) {
     return send(res, 404, { error: "Unsupported profile photo URL." });
   }
 
+  return sendPhoto(res, photo, { userId: id, size: size ?? "small" });
+}
+
+async function sendPhoto(res, photo, metadata) {
   const response = await fetch(photo, {
     headers: { Authorization: `Bearer ${await getApplicationToken()}` },
     redirect: "error",
@@ -194,8 +206,7 @@ async function sendAvatar(req, res, userId, size) {
   }
   if (!bytes) return send(res, 502, { error: "Profile photo is empty." });
   return send(res, 200, {
-    userId: id,
-    size: size ?? "small",
+    ...metadata,
     uri: `data:${type};base64,${Buffer.concat(chunks, bytes).toString("base64")}`,
   });
 }
@@ -229,6 +240,28 @@ async function sendAchievementIcon(req, res, path) {
 
 async function handle(req, res) {
   const url = new URL(req.url, redirect.origin);
+  if (req.method === "GET" && url.pathname === "/search-photo") {
+    const sources = url.searchParams.getAll("source");
+    const source = sources[0];
+    const photo = source && source.length <= 2048 && URL.canParse(source) ? new URL(source) : null;
+    if (
+      sources.length !== 1 ||
+      [...url.searchParams.keys()].some((key) => key !== "source") ||
+      !photo ||
+      photo.origin !== avatarOrigin ||
+      photo.username ||
+      photo.password ||
+      photo.search ||
+      photo.hash ||
+      !/^\/users\/[a-zA-Z0-9/_-]+\.(?:jpe?g|png|webp)$/.test(photo.pathname)
+    )
+      return send(res, 400, { error: "Invalid search photo URL." });
+    if (!(await verifySession(req, res))) return;
+    return sendPhoto(res, photo, { source });
+  }
+  if (req.method === "GET" && url.pathname === "/health")
+    return send(res, 200, { service: "intra42-sign-in" });
+  if (await handlePortal(req, res, url, getApplicationToken)) return;
   const state = url.searchParams.get("state");
   if (req.method === "GET" && url.pathname === "/achievement-icon") {
     const path = url.searchParams.get("path");
@@ -330,6 +363,9 @@ async function handle(req, res) {
 createServer((req, res) => {
   void handle(req, res).catch(() => {
     if (!res.headersSent)
-      send(res, 502, { error: "The OAuth service could not complete the request." });
+      send(res, 502, { error: "Could not load data from 42. Please try again shortly." });
   });
-}).listen(Number(PORT), "127.0.0.1", () => console.log(`OAuth broker listening on ${PORT}`));
+}).listen(Number(PORT), "127.0.0.1", () => {
+  console.log(`Sign-in service listening on ${PORT}`);
+  console.log(sessionStoreDescription);
+});

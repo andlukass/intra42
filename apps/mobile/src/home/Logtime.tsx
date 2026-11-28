@@ -1,16 +1,9 @@
 import { useMemo, useRef, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { Location } from "../api";
 import { theme } from "../theme";
 import { SkeletonBlock } from "../ui";
+import { CalendarTooltip } from "./CalendarTooltip";
 import { dayKey, logtimeByDay } from "./logtime-data";
 
 const lastMonthIndex = 3;
@@ -59,6 +52,7 @@ export function Logtime({ locations, now }: { locations: Location[]; now: number
     monthHeights: Record<number, number>;
   }>();
   const calendar = useRef<ScrollView>(null);
+  const positionedWidth = useRef<number | undefined>(undefined);
   const [selected, setSelected] = useState<{
     key: string;
     x: number;
@@ -66,24 +60,6 @@ export function Logtime({ locations, now }: { locations: Location[]; now: number
     width: number;
     height: number;
   }>();
-  const window = useWindowDimensions();
-  const tooltipWidth = 124;
-  const tooltipHeight = 44;
-  const left = selected
-    ? Math.max(
-        8,
-        Math.min(
-          selected.x + selected.width / 2 - tooltipWidth / 2,
-          window.width - tooltipWidth - 8,
-        ),
-      )
-    : 0;
-  const above = selected ? selected.y > tooltipHeight + 20 : true;
-  const top = selected
-    ? above
-      ? selected.y - tooltipHeight - 8
-      : selected.y + selected.height + 8
-    : 0;
   const totals = useMemo(() => logtimeByDay(locations, now), [locations, now]);
   const today = new Date(now);
   const months = Array.from(
@@ -150,6 +126,7 @@ export function Logtime({ locations, now }: { locations: Location[]; now: number
             style={[s.calendar, { height: calendarLayout.monthHeights[monthIndex] }]}
             contentContainerStyle={s.calendarPages}
             horizontal
+            pagingEnabled
             directionalLockEnabled
             disableIntervalMomentum
             decelerationRate="fast"
@@ -157,10 +134,24 @@ export function Logtime({ locations, now }: { locations: Location[]; now: number
             contentOffset={calendarLayout.initialOffset}
             showsHorizontalScrollIndicator={false}
             automaticallyAdjustContentInsets={false}
-            scrollEventThrottle={32}
-            onScroll={({ nativeEvent: { contentOffset } }) => {
+            contentInsetAdjustmentBehavior="never"
+            onContentSizeChange={(width) => {
+              if (
+                positionedWidth.current === calendarLayout.width ||
+                width < months.length * calendarLayout.width - 1
+              )
+                return;
+              calendar.current?.scrollTo({ x: monthIndex * calendarLayout.width, animated: false });
+              positionedWidth.current = calendarLayout.width;
+            }}
+            onMomentumScrollEnd={({ nativeEvent: { contentOffset } }) => {
               const index = Math.round(contentOffset.x / calendarLayout.width);
-              setMonthIndex(Math.min(lastMonthIndex, Math.max(0, index)));
+              const settledIndex = Math.min(lastMonthIndex, Math.max(0, index));
+              setMonthIndex(settledIndex);
+              calendar.current?.scrollTo({
+                x: settledIndex * calendarLayout.width,
+                animated: false,
+              });
             }}
           >
             {months.map((month, monthPage) => {
@@ -242,45 +233,16 @@ export function Logtime({ locations, now }: { locations: Location[]; now: number
           </ScrollView>
         )}
       </View>
-      <Modal
-        transparent
-        visible={!!selected}
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setSelected(undefined)}
-      >
-        <View style={s.overlay} accessibilityViewIsModal>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            accessibilityRole="button"
-            accessibilityLabel="Close logtime tooltip"
-            onPress={() => setSelected(undefined)}
-          />
-          {selected && (
-            <View
-              pointerEvents="none"
-              style={[s.tooltip, { left, top, width: tooltipWidth, height: tooltipHeight }]}
-            >
-              <Text accessibilityLiveRegion="polite" style={s.tooltipText}>
-                {Math.floor((totals[selected.key] ?? 0) / 3_600_000)}h{" "}
-                {Math.floor(((totals[selected.key] ?? 0) % 3_600_000) / 60_000)}m
-              </Text>
-              <View
-                style={[
-                  s.arrow,
-                  above ? s.arrowDown : s.arrowUp,
-                  {
-                    left: Math.max(
-                      8,
-                      Math.min(tooltipWidth - 20, selected.x + selected.width / 2 - left - 6),
-                    ),
-                  },
-                ]}
-              />
-            </View>
-          )}
-        </View>
-      </Modal>
+      <CalendarTooltip
+        anchor={selected}
+        text={
+          selected
+            ? `${Math.floor((totals[selected.key] ?? 0) / 3_600_000)}h ${Math.floor(((totals[selected.key] ?? 0) % 3_600_000) / 60_000)}m`
+            : ""
+        }
+        onClose={() => setSelected(undefined)}
+        closeLabel="Close logtime tooltip"
+      />
     </View>
   );
 }
@@ -340,24 +302,4 @@ const s = StyleSheet.create({
     color: theme.ink,
     fontVariant: ["tabular-nums"],
   },
-  overlay: { flex: 1 },
-  tooltip: {
-    position: "absolute",
-    backgroundColor: "#333",
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tooltipText: { color: "#fff", fontSize: 15, fontWeight: "600" },
-  arrow: {
-    position: "absolute",
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-  },
-  arrowDown: { bottom: -6, borderTopWidth: 6, borderTopColor: "#333" },
-  arrowUp: { top: -6, borderBottomWidth: 6, borderBottomColor: "#333" },
 });

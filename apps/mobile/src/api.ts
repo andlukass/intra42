@@ -1,4 +1,12 @@
-import { queryOptions, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
+import {
+  type QueryFilters,
+  queryOptions,
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { isAvatarUri, loadSmallAvatar } from "./avatarCache";
 import {
   lisboaMaps,
@@ -6,10 +14,16 @@ import {
   verifiedCampusMaps,
   type Workstation,
 } from "./clusters/maps";
+import type { Event, EventAction } from "./events";
 import { type Coalition, type CoalitionBloc, coalitionsByCourse } from "./home/coalition";
+import { loadCachedImage } from "./imageCache";
 import { broker, demo, useSession } from "./session";
 
-export type Campus = { id: number; name: string };
+export type Campus = { id: number; name: string; country?: string; time_zone?: string };
+export type SearchResults = {
+  users: { login: string; cdn_uri?: string }[];
+  projects: { id: number; name: string; slug: string }[];
+};
 export type Achievement = {
   id: number;
   name: string;
@@ -17,6 +31,7 @@ export type Achievement = {
   image?: string | null;
   kind?: string;
   tier?: string;
+  nbr_of_success?: number | null;
 };
 export type AchievementAward = {
   achievement_id: number;
@@ -34,6 +49,7 @@ export type Profile = {
   wallet?: number;
   correction_point?: number;
   alumni?: boolean;
+  alumnized_at?: string | null;
   image?: { link?: string; versions?: { small?: string } };
   campus?: Campus[];
   campus_users?: { campus_id: number; is_primary: boolean }[];
@@ -74,6 +90,16 @@ export type ProjectDetails = {
   children?: { id: number; name: string; slug: string }[];
   project_sessions?: ProjectSession[];
 };
+export type ProjectListItem = Omit<ProjectDetails, "id"> & {
+  id: number | string;
+  parent?: string;
+  duration?: string;
+  xp?: number;
+  recommendation?: string;
+  registration?: string;
+  result?: string;
+  resultSuccess?: boolean;
+};
 export type ProjectEnrollment = {
   current_team_id: number | null;
   teams?: {
@@ -83,14 +109,14 @@ export type ProjectEnrollment = {
     project_session_id: number;
   }[];
 };
-export type ProjectSort = "name" | "recent";
-export type Event = {
+export type ProjectSort = "name" | "duration" | "recommendation" | "registration" | "recent" | "xp";
+export type { Event } from "./events";
+export type PendingEvaluation = {
   id: number;
-  name: string;
+  user: string | null;
+  kind: string;
+  project_name: string;
   begin_at: string;
-  end_at: string;
-  location?: string;
-  kind?: string;
 };
 export type Evaluation = {
   id: number;
@@ -98,7 +124,8 @@ export type Evaluation = {
   filled_at?: string;
   scale?: { name?: string };
 };
-type EvaluationPoint = {
+export type EvaluationPoint = {
+  scale_team_id?: number | null;
   id: number;
   reason: string | null;
   sum: number;
@@ -111,7 +138,15 @@ type QuestEnrollment = {
   end_at: string | null;
   quest: { name: string; description?: string | null };
 };
-type CompletedEvaluation = Evaluation & {
+export type CompletedEvaluation = Evaluation & {
+  flag?: { name: string; positive: boolean } | null;
+  corrector?: { id: number; login: string } | null;
+  correcteds?: { id: number; login: string }[];
+  team?: {
+    name: string;
+    project_id: number;
+    users?: { id: number; login: string; leader?: boolean }[];
+  } | null;
   final_mark?: number | null;
   comment?: string | null;
   feedback?: string | null;
@@ -141,8 +176,14 @@ const fixtures: Profile = {
   email: "demo@example.test",
   wallet: 680,
   correction_point: 4,
-  titles: [{ id: 1, name: "Mastermind %login" }],
-  titles_users: [{ title_id: 1, selected: true }],
+  titles: [
+    { id: 1, name: "Mastermind %login" },
+    { id: 2, name: "%login the Explorer" },
+  ],
+  titles_users: [
+    { title_id: 1, selected: true },
+    { title_id: 2, selected: false },
+  ],
   campus: [{ id: 38, name: "Lisboa" }],
   cursus_users: [
     { level: 7.42, grade: "Pisciner", cursus: { id: 9, name: "C Piscine" } },
@@ -165,12 +206,28 @@ let demoSlots: Slot[] = [];
 const requestSpacingMs = 550;
 let requestQueue = Promise.resolve();
 let nextRequestAt = 0;
+const serviceQueues = new Map<string, { pending: Promise<void>; nextAt: number }>();
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-function waitForRequestTurn(signal?: AbortSignal) {
+function waitForRequestTurn(signal?: AbortSignal, service?: string) {
+  if (service) {
+    let queue = serviceQueues.get(service);
+    if (!queue) {
+      queue = { pending: Promise.resolve(), nextAt: 0 };
+      serviceQueues.set(service, queue);
+    }
+    const state = queue;
+    const turn = state.pending.then(async () => {
+      while (state.nextAt > Date.now() && !signal?.aborted) await wait(state.nextAt - Date.now());
+      if (signal?.aborted) throw new Error("Request canceled.");
+      state.nextAt = Date.now() + requestSpacingMs;
+    });
+    state.pending = turn.catch(() => {});
+    return turn;
+  }
   const turn = requestQueue.then(async () => {
     while (nextRequestAt > Date.now() && !signal?.aborted) {
       await wait(nextRequestAt - Date.now());
@@ -204,14 +261,37 @@ export async function api<T>(
   body?: object,
 ): Promise<T> {
   if (demo && token === "demo") {
+    if (path === "/me/title" && body && "titleId" in body) {
+      fixtures.titles_users = fixtures.titles_users?.map((title) => ({
+        ...title,
+        selected: title.title_id === body.titleId,
+      }));
+      return { titleId: body.titleId } as T;
+    }
     if (body && "slot" in body) {
       const slot = body.slot as Omit<Slot, "id">;
+      if (path === "/slots/cancel") {
+        demoSlots = demoSlots.filter(
+          (item) => item.begin_at !== slot.begin_at || item.end_at !== slot.end_at,
+        );
+        return { saved: true } as T;
+      }
       demoSlots = [...demoSlots, { ...slot, id: Date.now() }];
       return demoSlots.at(-1) as T;
     }
     const now = Date.now();
     if (path === "/me") return fixtures as T;
-    if (path.startsWith("/achievements?")) {
+    if (path.startsWith("/search?")) {
+      const query = new URLSearchParams(path.split("?")[1]).get("query")?.toLowerCase() ?? "";
+      return {
+        users: [fixtures]
+          .filter((user) => user.login.toLowerCase().includes(query))
+          .map(({ login }) => ({ login })),
+        projects: [demoProject].filter((project) => project.name.toLowerCase().includes(query)),
+      } as T;
+    }
+    if (path.startsWith("/users/by-login/")) return fixtures as T;
+    if (/^\/campus\/\d+\/achievements\?/.test(path)) {
       return [
         ...(fixtures.achievements ?? []),
         {
@@ -243,13 +323,17 @@ export async function api<T>(
       const id = Number(path.split("/").at(-1));
       return { ...fixtures, id, login: id === 1 ? fixtures.login : "campus-peer" } as T;
     }
-    if (path.startsWith("/me/scale_teams/as_corrector?")) {
+    if (/^\/users\/\d+\/scale_teams\/as_corrector\?/.test(path)) {
       const date = new Date(now - 86_400_000).toISOString();
       const item: CompletedEvaluation = {
         id: 1,
         begin_at: date,
         filled_at: date,
         scale: { name: "Web infrastructure" },
+        flag: { name: "Ok", positive: true },
+        corrector: { id: 1, login: fixtures.login },
+        correcteds: [{ id: 2, login: "campus-peer" }],
+        team: { name: "campus-peer's group", project_id: 1 },
         final_mark: 100,
         comment: "The implementation passed the required checks.",
         feedbacks: [{ id: 1, rating: 5, comment: "Clear explanations during the review." }],
@@ -301,25 +385,8 @@ export async function api<T>(
     if (path.includes("/slots")) return demoSlots as T;
     return [] as T;
   }
-  try {
-    return await requestIntraJson<T>(`https://api.intra.42.fr/v2${path}`, token, signal, body);
-  } catch (error) {
-    // User grants can be campus-restricted; the broker reads only public profile resources.
-    if (
-      !body &&
-      broker &&
-      error instanceof ApiError &&
-      error.status === 403 &&
-      /^\/users\/[1-9]\d{0,9}(?:\/(?:coalitions|locations))?(?:\?|$)/.test(path)
-    ) {
-      return requestIntraJson<T>(
-        `${broker}${path.replace("/users/", "/profiles/")}`,
-        token,
-        signal,
-      );
-    }
-    throw error;
-  }
+  if (!broker) throw new Error("Configure the HTTPS sign-in service URL.");
+  return requestIntraJson<T>(`${broker}/api${path}`, token, signal, body);
 }
 
 async function requestIntraJson<T>(
@@ -333,8 +400,10 @@ async function requestIntraJson<T>(
 }
 
 async function requestIntra(url: string, token: string, signal?: AbortSignal, body?: object) {
+  // These portal resources use independent upstream services, not the public API quota.
+  const service = /\/api\/users\/[1-9]\d*\/(pace|attendance|alumnization)$/.exec(url)?.[1];
   for (let attempt = 0; ; attempt++) {
-    await waitForRequestTurn(signal);
+    await waitForRequestTurn(signal, service);
     const response = await fetch(url, {
       method: body ? "POST" : "GET",
       headers: {
@@ -343,12 +412,17 @@ async function requestIntra(url: string, token: string, signal?: AbortSignal, bo
       },
       body: body ? JSON.stringify(body) : undefined,
       signal,
+    }).catch((error: unknown) => {
+      if (signal?.aborted) throw error;
+      throw new ApiError("Could not connect to Intra42. Check your connection and try again.", 0);
     });
     if (response.ok) return response;
     if (response.status === 429) {
       const delay = rateLimitDelay(response.headers.get("Retry-After"));
       if (delay <= 15_000) {
-        nextRequestAt = Math.max(nextRequestAt, Date.now() + delay);
+        const queue = service && serviceQueues.get(service);
+        if (queue) queue.nextAt = Math.max(queue.nextAt, Date.now() + delay);
+        else nextRequestAt = Math.max(nextRequestAt, Date.now() + delay);
         if (!body && attempt < 2) continue;
       }
       throw new Error("42 is limiting requests. Wait a moment and try again.");
@@ -361,13 +435,13 @@ async function requestIntra(url: string, token: string, signal?: AbortSignal, bo
   }
 }
 
-export function useIntraQuery<T>(path?: string) {
+export function useIntraQuery<T>(path?: string, options?: { retry?: number | false }) {
   const { token } = useSession();
   return useQuery({
     queryKey: ["42", path],
     enabled: !!token && !!path,
     staleTime: 60000,
-    retry: false,
+    retry: options?.retry ?? false,
     queryFn: ({ signal }) => {
       if (!token || !path) throw new Error("Sign in to 42 first.");
       return api<T>(token.accessToken, path, signal);
@@ -375,17 +449,24 @@ export function useIntraQuery<T>(path?: string) {
   });
 }
 
-const projectPageSize = 20;
-
-export function useProjectList(search: string, sort: ProjectSort, cursusId?: number) {
+export function useProjectList(
+  search: string,
+  sort: ProjectSort,
+  cursusId?: number,
+  cursusName?: string,
+  recommended = false,
+) {
   const { token } = useSession();
   return useInfiniteQuery({
-    queryKey: ["42", "project-list", search, sort, cursusId],
+    queryKey: ["42", "official-project-list", search, sort, cursusId, cursusName, recommended],
     enabled: !!token,
     staleTime: 60_000,
     retry: false,
     initialPageParam: 1,
-    queryFn: async ({ pageParam, signal }) => {
+    queryFn: async ({
+      pageParam,
+      signal,
+    }): Promise<{ items: ProjectListItem[]; hasMore: boolean }> => {
       if (!token) throw new Error("Sign in to 42 first.");
       if (demo && token.accessToken === "demo") {
         const matches =
@@ -393,25 +474,15 @@ export function useProjectList(search: string, sort: ProjectSort, cursusId?: num
           demoProject.name.toLowerCase().includes(search.toLowerCase());
         return { items: matches ? [demoProject] : [], hasMore: false };
       }
-      const params = new URLSearchParams({
-        "filter[visible]": "true",
-        sort: sort === "recent" ? "-created_at,-id" : "name,id",
-        "page[size]": String(projectPageSize),
-        "page[number]": String(pageParam),
-      });
-      if (search) params.set("search[name]", search);
-      const path = cursusId ? `/cursus/${cursusId}/projects` : "/projects";
-      const response = await requestIntra(
-        `https://api.intra.42.fr/v2${path}?${params}`,
+      const params = new URLSearchParams({ page: String(pageParam), sort });
+      if (recommended) params.set("recommended", "true");
+      if (search) params.set("search", search);
+      if (cursusName) params.set("cursus", cursusName);
+      return api<{ items: ProjectListItem[]; hasMore: boolean }>(
         token.accessToken,
+        `/me/project-list?${params}`,
         signal,
       );
-      const items: ProjectDetails[] = await response.json();
-      const total = Number.parseInt(response.headers.get("X-Total") ?? "", 10);
-      const hasMore =
-        items.length === projectPageSize &&
-        (!Number.isFinite(total) || pageParam * projectPageSize < total);
-      return { items, hasMore };
     },
     getNextPageParam: (lastPage, _pages, page) => (lastPage.hasMore ? page + 1 : undefined),
   });
@@ -428,8 +499,65 @@ const demoEventNames = [
   "Campus Game Night",
 ];
 
+const demoEvents: Event[] = demoEventNames.map((name, index) => {
+  const begin = Date.now() + (index + 1) * 86_400_000;
+  return {
+    id: index + 1,
+    name,
+    begin_at: new Date(begin).toISOString(),
+    end_at: new Date(begin + 3_600_000).toISOString(),
+    kind: index === 0 ? "exam" : "event",
+    description: "Meet your peers and take part in campus activities.",
+    location: "Campus",
+    max_subscribers: 40,
+    nbr_subscribers: 7,
+    is_subscribed: false,
+  };
+});
+
+function eventsOptions(token: string) {
+  return queryOptions({
+    queryKey: ["42", "events"],
+    staleTime: 60_000,
+    retry: false,
+    queryFn: ({ signal }) =>
+      demo && token === "demo"
+        ? Promise.resolve(demoEvents)
+        : api<Event[]>(token, "/me/events", signal),
+  });
+}
+
+export function useEventDetails() {
+  const { token } = useSession();
+  return useQuery({ ...eventsOptions(token?.accessToken ?? ""), enabled: !!token, staleTime: 0 });
+}
+
+export function useEventRegistration(eventId: number) {
+  const { token } = useSession();
+  const client = useQueryClient();
+  return useMutation({
+    retry: false,
+    mutationFn: async (action: EventAction) => {
+      if (!token) throw new Error("Sign in to 42 first.");
+      if (demo && token.accessToken === "demo") {
+        const event = demoEvents.find((item) => item.id === eventId);
+        if (!event) throw new Error("Event not found.");
+        event.is_subscribed = action === "subscribe";
+        event.nbr_subscribers = (event.nbr_subscribers ?? 0) + (action === "subscribe" ? 1 : -1);
+        return;
+      }
+      await api(token.accessToken, `/events/${eventId}/subscription`, undefined, { action });
+    },
+    onSettled: async () => {
+      await client.invalidateQueries({ queryKey: ["42", "events"] });
+      await client.invalidateQueries({ queryKey: ["42", "agenda"] });
+    },
+  });
+}
+
 export function useAgenda(campusId?: number) {
   const { token } = useSession();
+  const client = useQueryClient();
   return useInfiniteQuery({
     queryKey: ["42", "agenda", campusId],
     enabled: !!token && !!campusId,
@@ -438,36 +566,10 @@ export function useAgenda(campusId?: number) {
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
       if (!token || !campusId) throw new Error("A campus is required to view the agenda.");
+      if (signal.aborted) throw new Error("Request canceled.");
+      const all = await client.fetchQuery(eventsOptions(token.accessToken));
       const end = pageParam * agendaPageSize;
-      if (demo && token.accessToken === "demo") {
-        const start = end - agendaPageSize;
-        const items = demoEventNames.slice(start, end).map((name, index): Event => {
-          const id = start + index + 1;
-          const begin = Date.now() + id * 86_400_000;
-          return {
-            id,
-            name,
-            begin_at: new Date(begin).toISOString(),
-            end_at: new Date(begin + 3_600_000).toISOString(),
-          };
-        });
-        return { items, hasMore: end < demoEventNames.length };
-      }
-      const params = new URLSearchParams({
-        "filter[future]": "true",
-        sort: "begin_at,id",
-        "page[size]": String(agendaPageSize),
-        "page[number]": String(pageParam),
-      });
-      const response = await requestIntra(
-        `https://api.intra.42.fr/v2/campus/${campusId}/events?${params}`,
-        token.accessToken,
-        signal,
-      );
-      const items: Event[] = await response.json();
-      const total = Number.parseInt(response.headers.get("X-Total") ?? "", 10);
-      const hasMore = items.length === agendaPageSize && (!Number.isFinite(total) || end < total);
-      return { items, hasMore };
+      return { items: all.slice(end - agendaPageSize, end), hasMore: end < all.length };
     },
     getNextPageParam: (lastPage, _pages, lastPageNumber) =>
       lastPage.hasMore ? lastPageNumber + 1 : undefined,
@@ -476,16 +578,16 @@ export function useAgenda(campusId?: number) {
 
 const feedbackPageSize = 30;
 
-export function useFeedbackLogs() {
+export function useFeedbackLogs(userId?: number) {
   const { token } = useSession();
   return useInfiniteQuery({
-    queryKey: ["42", "feedback-logs"],
-    enabled: !!token,
+    queryKey: ["42", "feedback-logs", userId],
+    enabled: !!token && !!userId,
     staleTime: 60_000,
     retry: false,
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) => {
-      if (!token) throw new Error("Sign in to view feedback logs.");
+      if (!token || !userId) throw new Error("A user is required to view feedback logs.");
       const params = new URLSearchParams({
         "filter[filled]": "true",
         sort: "-begin_at,-id",
@@ -494,7 +596,7 @@ export function useFeedbackLogs() {
       });
       return api<CompletedEvaluation[]>(
         token.accessToken,
-        `/me/scale_teams/as_corrector?${params}`,
+        `/users/${userId}/scale_teams/as_corrector?${params}`,
         signal,
       );
     },
@@ -575,9 +677,9 @@ export function useAchievementAwards(userId?: number) {
   );
 }
 
-export function useAchievementCatalog(enabled: boolean) {
+export function useAchievementCatalog(campusId?: number) {
   return useIntraList<Achievement>(
-    enabled ? "/achievements?filter[visible]=true&sort=id" : undefined,
+    campusId ? `/campus/${campusId}/achievements?filter[visible]=true&sort=id` : undefined,
   );
 }
 
@@ -592,15 +694,63 @@ export function useAchievementIcon(image?: string | null) {
       failures < 2 && (!(error instanceof ApiError) || error.status === 429 || error.status >= 500),
     queryFn: async ({ signal }) => {
       if (!token || !broker || !path) throw new Error("Achievement icon unavailable.");
-      const { uri } = await requestIntraJson<{ uri: unknown }>(
-        `${broker}/achievement-icon?${new URLSearchParams({ path })}`,
-        token.accessToken,
+      return loadCachedImage({
+        directoryName: "achievement-icons-v1",
+        source: path,
         signal,
-      );
-      if (typeof uri !== "string" || !/^data:image\/(svg\+xml|png|jpeg|webp);base64,/.test(uri)) {
-        throw new Error("Invalid achievement icon.");
-      }
-      return uri;
+        isValid: (uri): uri is string =>
+          typeof uri === "string" && /^data:image\/(svg\+xml|png|jpeg|webp);base64,/.test(uri),
+        download: async () => {
+          // Image downloads must not wait behind rate-limited API reads.
+          const response = await fetch(
+            `${broker}/achievement-icon?${new URLSearchParams({ path })}`,
+            {
+              headers: { Authorization: `Bearer ${token.accessToken}` },
+              signal,
+            },
+          );
+          const data = await response.json();
+          if (!response.ok)
+            throw new ApiError(
+              typeof data?.error === "string" ? data.error : "Could not load achievement icon.",
+              response.status,
+            );
+          return data?.uri;
+        },
+      });
+    },
+  });
+}
+
+export function useSearchPhoto(source?: string) {
+  const { token } = useSession();
+  return useQuery({
+    queryKey: ["42", "search-photo-v1", source],
+    enabled: !!(token && broker && source && !demo),
+    staleTime: 30 * 60_000,
+    retry: (failures, error) =>
+      failures < 2 && (!(error instanceof ApiError) || error.status >= 500),
+    queryFn: async ({ signal }) => {
+      if (!token || !broker || !source) throw new Error("Search photo unavailable.");
+      return loadCachedImage({
+        directoryName: "search-photos-v1",
+        source,
+        signal,
+        isValid: isAvatarUri,
+        download: async () => {
+          const response = await fetch(
+            `${broker}/search-photo?${new URLSearchParams({ source })}`,
+            {
+              headers: { Authorization: `Bearer ${token.accessToken}` },
+              signal,
+            },
+          );
+          const data = await response.json();
+          if (!response.ok) throw new ApiError("Could not load search photo.", response.status);
+          if (data.source !== source) throw new Error("Invalid search photo response.");
+          return data.uri;
+        },
+      });
     },
   });
 }
@@ -613,7 +763,7 @@ export function useQuests(userId?: number) {
 
 function clusterMapOptions(token: string | undefined, campusId?: number) {
   return queryOptions({
-    queryKey: ["42", "clusters", campusId, "official-maps-v1"],
+    queryKey: ["42", "clusters", campusId, "official-maps-v2"],
     select: (clusters: unknown[]) => clusters.map((cluster) => normalizeCluster(cluster, campusId)),
     enabled: !!token && !!campusId,
     staleTime: 30 * 60_000,
@@ -622,22 +772,7 @@ function clusterMapOptions(token: string | undefined, campusId?: number) {
       if (!token || !campusId) throw new Error("Sign in to view your campus clusters.");
       const verified = verifiedCampusMaps(campusId);
       if (verified.length) return verified;
-      try {
-        const clusters = await readPages<unknown>(
-          token,
-          `/clusters?filter[campus_id]=${campusId}&sort=id`,
-          signal,
-        );
-        if (!clusters.length) {
-          throw new Error("This campus's official map is not available in the app yet.");
-        }
-        return clusters;
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 403) {
-          throw new Error("42 did not allow access to this campus's maps.");
-        }
-        throw error;
-      }
+      return api<unknown[]>(token, `/campus/${campusId}/maps`, signal);
     },
   });
 }
@@ -680,8 +815,69 @@ export function useClusterOccupancy(campusId?: number) {
   });
 }
 
-export const useProfile = (userId?: number) =>
-  useIntraQuery<Profile>(userId === undefined ? "/me" : `/users/${userId}`);
+export const useProfile = (userId?: number | string) =>
+  useIntraQuery<Profile>(
+    userId === undefined
+      ? "/me"
+      : typeof userId === "string"
+        ? `/users/by-login/${encodeURIComponent(userId)}`
+        : `/users/${userId}`,
+  );
+
+export function useSelectTitle(userId?: number) {
+  const { token } = useSession();
+  const client = useQueryClient();
+  const profiles = {
+    queryKey: ["42"],
+    predicate: (query) => query.queryKey[1] === "/me" || query.queryKey[1] === `/users/${userId}`,
+  } satisfies QueryFilters;
+  function select(titleId: number) {
+    client.setQueriesData<Profile>(profiles, (previous) =>
+      previous && previous.id === userId
+        ? {
+            ...previous,
+            titles_users: previous.titles?.map((entry) => ({
+              title_id: entry.id,
+              selected: entry.id === titleId,
+            })),
+          }
+        : previous,
+    );
+  }
+  return useMutation({
+    retry: false,
+    onMutate: async (titleId: number) => {
+      await client.cancelQueries(profiles);
+      const previous = client.getQueriesData<Profile>(profiles);
+      select(titleId);
+      return previous;
+    },
+    mutationFn: async (titleId: number) => {
+      if (!token || !userId) throw new Error("Sign in to change your title.");
+      const owner = userId;
+      const saved = await api<{ titleId: number }>(token.accessToken, "/me/title", undefined, {
+        titleId,
+      });
+      if (saved.titleId !== titleId) throw new Error("42 returned a different title selection.");
+      return { userId: owner, titleId };
+    },
+    onSuccess: async ({ titleId }) => {
+      // A profile read started during the save must not restore the old selection.
+      await client.cancelQueries(profiles);
+      select(titleId);
+    },
+    onError: async (_error, _titleId, previous) => {
+      await client.cancelQueries(profiles);
+      for (const [key, profile] of previous ?? []) {
+        client.setQueryData<Profile>(key, (current) =>
+          current && current.id === userId
+            ? { ...current, titles_users: profile?.titles_users }
+            : current,
+        );
+      }
+    },
+  });
+}
 
 export function useProfileCoalitions(user?: Profile) {
   const { token } = useSession();

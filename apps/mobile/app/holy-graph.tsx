@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   Keyboard,
   Linking,
-  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
@@ -11,9 +10,21 @@ import {
   TextInput,
   View,
 } from "react-native";
+import {
+  GestureDetector,
+  GestureHandlerRootView,
+  useCompetingGestures,
+  usePanGesture,
+  usePinchGesture,
+  useSimultaneousGestures,
+  useTapGesture,
+} from "react-native-gesture-handler";
+import { useAnimatedProps, useSharedValue } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Circle, G, Path, Rect, Text as SvgText } from "react-native-svg";
+import { scheduleOnRN } from "react-native-worklets";
 import { useProfile } from "../src/api";
+import { type GraphCamera, graphDrawingMatrix, moveGraphCamera } from "../src/projects/graphCamera";
+import { HolyGraphArtwork } from "../src/projects/HolyGraphArtwork";
 import graph from "../src/projects/holy-graph.json";
 import { useSession } from "../src/session";
 import { theme } from "../src/theme";
@@ -28,9 +39,8 @@ const span = {
   width: Math.max(...graph.nodes.map(({ x }) => Math.abs(x - center.x))) * 2 + 140,
   height: Math.max(...graph.nodes.map(({ y }) => Math.abs(y - center.y))) * 2 + 140,
 };
+const viewBox = `${center.x - span.width / 2} ${center.y - span.height / 2} ${span.width} ${span.height}`;
 const overview = { ...center, zoom: 1 };
-const edges = graph.edges.map(([x1, y1, x2, y2]) => `M${x1} ${y1}L${x2} ${y2}`).join(" ");
-const rings = [166, 333, 500, 666, 833, 1000];
 
 function openPortal(path: string) {
   void Linking.openURL(`https://projects.intra.42.fr${path}`).catch(() =>
@@ -67,7 +77,12 @@ export default function HolyGraph() {
   const { token } = useSession();
   const profile = useProfile();
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [camera, setCamera] = useState(overview);
+  const [settledCamera, setSettledCamera] = useState<GraphCamera>(overview);
+  const camera = useSharedValue<GraphCamera>(overview);
+  const pinching = useSharedValue(false);
+  const moved = useSharedValue(false);
+  const hadPinch = useSharedValue(false);
+  const focal = useSharedValue<{ x: number; y: number } | null>(null);
   const [selected, setSelected] = useState<Node>();
   const [search, setSearch] = useState("");
   const term = search.trim().toLowerCase();
@@ -75,26 +90,111 @@ export default function HolyGraph() {
     ? graph.nodes.filter(({ name }) => name.toLowerCase().includes(term)).slice(0, 4)
     : [];
   const { width, height } = size;
-  const scale =
-    width && height ? Math.max(span.width / width, span.height / height) / camera.zoom : 1;
-  const pan = useMemo(() => {
-    let lastX = 0;
-    let lastY = 0;
-    return PanResponder.create({
-      onMoveShouldSetPanResponderCapture: (_event, { dx, dy }) => Math.hypot(dx, dy) > 8,
-      onPanResponderGrant: () => {
-        lastX = 0;
-        lastY = 0;
-      },
-      onPanResponderMove: (_event, { dx, dy }) => {
-        const x = (lastX - dx) * scale;
-        const y = (lastY - dy) * scale;
-        lastX = dx;
-        lastY = dy;
-        setCamera((current) => ({ ...current, x: current.x + x, y: current.y + y }));
-      },
-    });
-  }, [scale]);
+  const baseScale = width && height ? Math.max(span.width / width, span.height / height) : 1;
+  const setCamera = useCallback(
+    (next: GraphCamera) => {
+      camera.set(next);
+      setSettledCamera(next);
+    },
+    [camera],
+  );
+  const select = useCallback(
+    (node: Node) => {
+      if (moved.get()) return;
+      setSelected(node);
+    },
+    [moved],
+  );
+  const selectAt = useCallback(
+    (x: number, y: number, current: GraphCamera) => {
+      const scale = baseScale / current.zoom;
+      const worldX = current.x + (x - width / 2) * scale;
+      const worldY = current.y + (y - height / 2) * scale;
+      let closest: Node | undefined;
+      let distance = Infinity;
+      for (const node of graph.nodes) {
+        const next = Math.hypot(node.x - worldX, node.y - worldY);
+        if (next <= Math.max(48, 22 * scale) && next < distance) {
+          closest = node;
+          distance = next;
+        }
+      }
+      if (closest) select(closest);
+    },
+    [baseScale, width, height, select],
+  );
+  const pan = usePanGesture({
+    minDistance: 5,
+    averageTouches: true,
+    onBegin: () => {
+      "worklet";
+      moved.value = false;
+      hadPinch.value = false;
+    },
+    onActivate: () => {
+      "worklet";
+      moved.value = true;
+    },
+    onUpdate: (event) => {
+      "worklet";
+      if (pinching.value || hadPinch.value || event.numberOfPointers !== 1) return;
+      const current = camera.value;
+      const scale = baseScale / current.zoom;
+      camera.value = {
+        ...current,
+        x: current.x - event.changeX * scale,
+        y: current.y - event.changeY * scale,
+      };
+    },
+    onFinalize: () => {
+      "worklet";
+      scheduleOnRN(setSettledCamera, camera.value);
+    },
+  });
+  const pinch = usePinchGesture({
+    onActivate: (event) => {
+      "worklet";
+      pinching.value = true;
+      hadPinch.value = true;
+      moved.value = true;
+      focal.value = event.numberOfPointers === 2 ? { x: event.focalX, y: event.focalY } : null;
+    },
+    onUpdate: (event) => {
+      "worklet";
+      // The native focal point can jump when a finger leaves the screen.
+      if (event.numberOfPointers !== 2) {
+        focal.value = null;
+        return;
+      }
+      const previous = focal.value;
+      focal.value = { x: event.focalX, y: event.focalY };
+      if (!previous) return;
+      camera.value = moveGraphCamera(
+        camera.value,
+        { ...previous, distance: 1, count: 2 },
+        { x: event.focalX, y: event.focalY, distance: event.scaleChange, count: 2 },
+        { width, height, x: 0, y: 0 },
+        span,
+      );
+    },
+    onFinalize: () => {
+      "worklet";
+      pinching.value = false;
+      scheduleOnRN(setSettledCamera, camera.value);
+    },
+  });
+  const tap = useTapGesture({
+    maxDistance: 5,
+    onDeactivate: (event) => {
+      "worklet";
+      if (!event.canceled && !moved.value) scheduleOnRN(selectAt, event.x, event.y, camera.value);
+    },
+  });
+  const movement = useSimultaneousGestures(pan, pinch);
+  const gestures = useCompetingGestures(movement, tap);
+  const drawingProps = useAnimatedProps(() => ({
+    matrix: graphDrawingMatrix(camera.value, center),
+  }));
 
   const progress = useMemo(() => {
     const states = new Map<number, "Completed" | "In progress">();
@@ -107,16 +207,9 @@ export default function HolyGraph() {
     return states;
   }, [profile.data?.projects_users]);
 
-  function select(node: Node) {
-    setSelected(node);
-    if (camera.zoom < 3) setCamera({ x: node.x, y: node.y, zoom: 3 });
-  }
-
   function zoom(factor: number) {
-    setCamera((current) => ({
-      ...current,
-      zoom: Math.min(12, Math.max(1, current.zoom * factor)),
-    }));
+    const current = camera.get();
+    setCamera({ ...current, zoom: Math.min(12, Math.max(1, current.zoom * factor)) });
   }
 
   if (!token || !profile.data) {
@@ -176,91 +269,26 @@ export default function HolyGraph() {
           )}
         </View>
       ) : null}
-      <View
-        {...pan.panHandlers}
-        onLayout={({ nativeEvent }) => {
-          const { width, height } = nativeEvent.layout;
-          setSize({ width, height });
-        }}
-        style={s.canvas}
-      >
-        {width > 0 && height > 0 && (
-          <Svg
-            width={width}
-            height={height}
-            viewBox={`${camera.x - (width * scale) / 2} ${camera.y - (height * scale) / 2} ${width * scale} ${height * scale}`}
+      <GestureHandlerRootView style={s.canvas}>
+        <GestureDetector gesture={gestures}>
+          <View
+            collapsable={false}
+            onLayout={({ nativeEvent }) => {
+              const { width, height } = nativeEvent.layout;
+              setSize({ width, height });
+            }}
+            style={s.canvas}
           >
-            {rings.map((radius) => (
-              <Circle
-                key={radius}
-                cx={3000}
-                cy={3000}
-                r={radius}
-                stroke="#08717b"
-                strokeWidth={3}
-                fill="none"
-              />
-            ))}
-            <Path d={edges} stroke="#617b85" strokeWidth={4} fill="none" />
-            {graph.nodes.map((node) => {
-              const status = progress.get(node.id);
-              const active = selected?.id === node.id;
-              const fill =
-                status === "Completed"
-                  ? "#00bcba"
-                  : status === "In progress"
-                    ? "#245d67"
-                    : "#263942";
-              const stroke = active ? "#fff" : status ? "#00bcba" : "#a3b7c0";
-              const box = node.kind === "exam" || node.kind === "piscine";
-              const label = camera.zoom >= 2.5 || active;
-              return (
-                <G
-                  key={node.id}
-                  onPress={() => select(node)}
-                  accessible
-                  accessibilityRole="button"
-                  accessibilityLabel={status ? `${node.name}, ${status}` : node.name}
-                >
-                  {box ? (
-                    <Rect
-                      x={node.x - 48}
-                      y={node.y - 23}
-                      width={96}
-                      height={46}
-                      rx={12}
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={5}
-                    />
-                  ) : (
-                    <Circle
-                      cx={node.x}
-                      cy={node.y}
-                      r={45}
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={5}
-                    />
-                  )}
-                  {label && (
-                    <SvgText
-                      x={node.x}
-                      y={node.y + 6}
-                      fill={status === "Completed" ? "#082428" : "#fff"}
-                      fontSize={node.name.length > 10 ? 13 : 17}
-                      fontWeight="700"
-                      textAnchor="middle"
-                    >
-                      {node.name.length > 15 ? `${node.name.slice(0, 14)}…` : node.name}
-                    </SvgText>
-                  )}
-                </G>
-              );
-            })}
-          </Svg>
-        )}
-      </View>
+            <HolyGraphArtwork
+              viewBox={viewBox}
+              selectedId={selected?.id}
+              progress={progress}
+              onSelect={select}
+              animatedProps={drawingProps}
+            />
+          </View>
+        </GestureDetector>
+      </GestureHandlerRootView>
       <SafeAreaView edges={Platform.OS === "ios" ? ["bottom"] : []} style={s.footer}>
         {selected ? (
           <Pressable
@@ -272,7 +300,9 @@ export default function HolyGraph() {
             style={s.details}
           >
             <View style={s.detailsCopy}>
-              <Text style={s.cursus}>{selected.name}</Text>
+              <Text numberOfLines={2} style={s.cursus}>
+                {selected.name}
+              </Text>
               {progress.get(selected.id) && (
                 <Text style={s.linkText}>{progress.get(selected.id)}</Text>
               )}
@@ -282,14 +312,16 @@ export default function HolyGraph() {
             </Text>
           </Pressable>
         ) : (
-          <Text style={styles.muted}>Drag to explore or tap a project.</Text>
+          <View style={s.details}>
+            <Text style={styles.muted}>Drag to explore or tap a project.</Text>
+          </View>
         )}
         <View style={s.controls}>
           <Control
             label="Zoom out"
             text="−"
             onPress={() => zoom(2 / 3)}
-            disabled={camera.zoom <= 1}
+            disabled={settledCamera.zoom <= 1}
           />
           <Control
             label="Reset view"
@@ -303,7 +335,7 @@ export default function HolyGraph() {
             label="Zoom in"
             text="+"
             onPress={() => zoom(1.5)}
-            disabled={camera.zoom >= 12}
+            disabled={settledCamera.zoom >= 12}
           />
         </View>
       </SafeAreaView>
@@ -339,7 +371,7 @@ const s = StyleSheet.create({
   match: { minHeight: 44, justifyContent: "center" },
   canvas: { backgroundColor: "#081b25", flex: 1, overflow: "hidden" },
   footer: { padding: 12, gap: 8, backgroundColor: theme.surface },
-  details: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8 },
+  details: { height: 64, flexDirection: "row", alignItems: "center", gap: 8 },
   detailsCopy: { flex: 1, gap: 2 },
   controls: { flexDirection: "row", justifyContent: "center", gap: 8 },
   control: {

@@ -1,6 +1,7 @@
 import { BlurTargetView, BlurView } from "expo-blur";
-import { type ReactNode, type Ref, useRef } from "react";
+import { type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 import {
+  AccessibilityInfo,
   type DimensionValue,
   Platform,
   Pressable,
@@ -13,6 +14,56 @@ import {
 import { type Edge, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { theme } from "./theme";
+
+export function useToast() {
+  const [toast, setToast] = useState<{ message: string; error: boolean } | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  function hideToast() {
+    clearTimeout(timer.current);
+    setToast(null);
+  }
+  function showToast(message: string, error = false) {
+    clearTimeout(timer.current);
+    setToast({ message, error });
+    AccessibilityInfo.announceForAccessibility(message);
+    timer.current = setTimeout(() => setToast(null), 3000);
+  }
+  return { toast, showToast, hideToast };
+}
+
+export function Toast({
+  message,
+  error = false,
+  bottom,
+}: {
+  message: string;
+  error?: boolean;
+  bottom?: number;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      pointerEvents="none"
+      accessibilityRole="alert"
+      style={{
+        position: "absolute",
+        bottom: bottom ?? (Platform.OS === "ios" ? insets.bottom + 8 : 8),
+        alignSelf: "center",
+        width: "92%",
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "#fff",
+        boxShadow: "0px 4px 16px rgba(0, 0, 0, 0.15)",
+        backgroundColor: error ? "#b42318" : theme.teal,
+        paddingHorizontal: 18,
+        paddingVertical: 16,
+      }}
+    >
+      <Text style={{ color: "#fff", fontSize: 16 }}>{message}</Text>
+    </View>
+  );
+}
 
 export const teal = theme.tealText;
 export const stackScreenEdges: Edge[] =
@@ -38,6 +89,7 @@ export function Screen({
   scrollRef,
   scrollUnderStatusBar = false,
   underHeader = false,
+  scrollEnabled = true,
 }: {
   children: ReactNode;
   overlay?: ReactNode;
@@ -46,17 +98,21 @@ export function Screen({
   scrollRef?: Ref<ScrollView>;
   scrollUnderStatusBar?: boolean;
   underHeader?: boolean;
+  scrollEnabled?: boolean;
 }) {
   const { top } = useSafeAreaInsets();
   const blurTarget = useRef<View>(null);
   const content = (
     <ScrollView
+      scrollEnabled={scrollEnabled}
       ref={scrollRef}
       contentContainerStyle={[
         styles.content,
         scrollUnderStatusBar && { paddingTop: top + theme.spacing },
       ]}
-      contentInsetAdjustmentBehavior={scrollUnderStatusBar ? "never" : undefined}
+      contentInsetAdjustmentBehavior={
+        scrollUnderStatusBar ? "never" : underHeader ? "automatic" : undefined
+      }
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}
       stickyHeaderIndices={stickyHeaderIndices}
@@ -106,19 +162,37 @@ export function Button({
   title,
   onPress,
   disabled = false,
+  variant = "primary",
+  icon,
 }: {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  variant?: "primary" | "secondary" | "outline" | "danger";
+  icon?: ReactNode;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled}
-      style={[styles.button, disabled && { opacity: 0.5 }]}
+      style={[
+        styles.button,
+        (variant === "secondary" || variant === "outline") && styles.secondaryButton,
+        variant === "danger" && styles.dangerButton,
+        disabled && { opacity: 0.5 },
+      ]}
     >
-      <Text style={styles.action}>{title}</Text>
+      {icon}
+      <Text
+        style={[
+          styles.action,
+          variant === "secondary" && styles.secondaryAction,
+          variant === "outline" && { color: theme.tealText },
+        ]}
+      >
+        {title}
+      </Text>
     </Pressable>
   );
 }
@@ -185,6 +259,8 @@ export const styles = StyleSheet.create({
     boxShadow: "0px 3px 7px rgba(0, 0, 0, 0.12)",
   },
   button: {
+    flexDirection: "row",
+    gap: 8,
     backgroundColor: theme.teal,
     borderRadius: 11,
     minHeight: 48,
@@ -192,6 +268,14 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 12,
   },
-  action: { fontWeight: "700", color: "#092d31", fontSize: 16 },
+  action: { fontWeight: "700", color: "#fff", fontSize: 16 },
+  dangerButton: { backgroundColor: "#d7636f" },
+  secondaryButton: {
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: 16,
+  },
+  secondaryAction: { color: theme.ink, fontWeight: "400" },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
 });

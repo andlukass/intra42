@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
@@ -5,22 +6,39 @@ import Svg, { Path } from "react-native-svg";
 import { AchievementRow } from "../achievements/AchievementRow";
 import { earnedAchievements } from "../achievements/earned";
 import {
-  type Evaluation,
   useAchievementAwards,
   useAgenda,
   useIntraQuery,
   useLogtime,
   useProfile,
   useProfileCoalitions,
+  useSelectTitle,
 } from "../api";
+import { SignIn } from "../SignIn";
 import { useSession } from "../session";
 import { theme } from "../theme";
-import { Button, Card, QueryMessage, Screen, SkeletonBlock, SkeletonList, styles } from "../ui";
+import {
+  Button,
+  Card,
+  QueryMessage,
+  Screen,
+  SkeletonBlock,
+  SkeletonList,
+  styles,
+  Toast,
+  useToast,
+} from "../ui";
 import { useDecodedAvatar } from "../useDecodedAvatar";
+import { Alumnization } from "./Alumnization";
+import type { AlumniCountdown } from "./alumnization-info";
 import { defaultProfileCourse, profilePalette } from "./coalition";
 import { EventCard, EventCardSkeleton } from "./EventCard";
 import { Logtime, LogtimeSkeleton } from "./Logtime";
+import { PendingEvaluations, PendingEvaluationsSkeleton } from "./PendingEvaluations";
 import { ProfileCard, ProfileCardSkeleton } from "./ProfileCard";
+import { ProfileProgress } from "./ProfileProgress";
+import { ProfileResults } from "./ProfileResults";
+import type { AttendanceSummary, PaceProfile } from "./profile-progress";
 
 const projectActions = [
   { label: "Evaluation logs", href: "/evaluation-logs" },
@@ -28,17 +46,18 @@ const projectActions = [
   { label: "Quests", href: "/quests" },
 ] as const;
 
-export function ProfileScreen({ userId }: { userId?: number }) {
+export function ProfileScreen({ userId }: { userId?: number | string }) {
   const ownHome = userId === undefined;
   const router = useRouter();
-  const { token, loading, signIn, logout } = useSession();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const client = useQueryClient();
+  const { token, loading, logout } = useSession();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCursusId, setSelectedCursusId] = useState<number>();
   const profile = useProfile(userId);
   const { refetch: refreshProfile } = profile;
   const user = profile.data;
+  const titleMutation = useSelectTitle(ownHome ? user?.id : undefined);
+  const { toast, showToast, hideToast } = useToast();
   const awards = useAchievementAwards(user?.id);
   const achievements = earnedAchievements(user?.achievements, awards.data);
   const ongoingProjects = user?.projects_users?.filter(
@@ -52,15 +71,21 @@ export function ProfileScreen({ userId }: { userId?: number }) {
     courses.find(({ cursus }) => cursus.id === selectedCursusId) ??
     defaultProfileCourse(courses, coalitions.byCourse);
   const palette = profilePalette(course && coalitions.byCourse.get(course.cursus.id)?.color);
+  const alumnization = useIntraQuery<AlumniCountdown | null>(
+    user && !user.alumnized_at ? `/users/${user.id}/alumnization` : undefined,
+  );
+  const pace = useIntraQuery<PaceProfile | null>(
+    user && course?.cursus.id === 21 ? `/users/${user.id}/pace` : undefined,
+  );
+  const attendance = useIntraQuery<AttendanceSummary | null>(
+    user && course?.cursus.id === 21 ? `/users/${user.id}/attendance` : undefined,
+  );
   const campus =
     user?.campus?.find(
       (item) => item.id === user.campus_users?.find((entry) => entry.is_primary)?.campus_id,
     ) ?? user?.campus?.[0];
   const events = useAgenda(ownHome ? campus?.id : undefined);
   const agenda = events.data?.pages.flatMap((page) => page.items);
-  const evaluations = useIntraQuery<Evaluation[]>(
-    ownHome && user ? `/users/${user.id}/scale_teams?sort=-begin_at&page[size]=30` : undefined,
-  );
   const locations = useLogtime(user?.id);
 
   async function refresh() {
@@ -70,10 +95,25 @@ export function ProfileScreen({ userId }: { userId?: number }) {
       await Promise.all([
         refreshProfile(),
         coalitions.refresh?.(),
-        ownHome && campus && events.refetch(),
-        ownHome && user && evaluations.refetch(),
+        ownHome && user && client.refetchQueries({ queryKey: ["42", "/me/evaluations"] }),
+        ownHome &&
+          campus &&
+          client.invalidateQueries({ queryKey: ["42", "events"] }).then(() => events.refetch()),
         user && locations.refetch(),
         user && awards.refetch(),
+        user && client.refetchQueries({ queryKey: ["42", `/users/${user.id}/alumnization`] }),
+        !ownHome &&
+          user &&
+          course &&
+          client.refetchQueries({
+            queryKey: ["42", `/users/${user.id}/marks?cursus_id=${course.cursus.id}`],
+          }),
+        user &&
+          course?.cursus.id === 21 &&
+          client.refetchQueries({ queryKey: ["42", `/users/${user.id}/pace`] }),
+        user &&
+          course?.cursus.id === 21 &&
+          client.refetchQueries({ queryKey: ["42", `/users/${user.id}/attendance`] }),
       ]);
     } finally {
       setRefreshing(false);
@@ -85,13 +125,15 @@ export function ProfileScreen({ userId }: { userId?: number }) {
     (profile.isPending ||
       (!!user &&
         (avatar.loading ||
+          (!user.alumnized_at && alumnization.isPending) ||
+          (course?.cursus.id === 21 && (pace.isPending || attendance.isPending)) ||
           coalitions.loading ||
           locations.isPending ||
-          (ownHome && (evaluations.isPending || (!!campus && events.isPending))))));
+          (ownHome && !!campus && events.isPending))));
 
   if (loading || waitingForContent)
     return (
-      <Screen scrollUnderStatusBar={ownHome}>
+      <Screen scrollUnderStatusBar={ownHome} underHeader={!ownHome}>
         <View
           accessible
           accessibilityLabel="Loading profile"
@@ -99,28 +141,19 @@ export function ProfileScreen({ userId }: { userId?: number }) {
           style={homeStyles.skeleton}
         >
           <ProfileCardSkeleton palette={palette} />
+          {ownHome && <PendingEvaluationsSkeleton />}
           {ownHome && (
-            <>
-              <View style={styles.card}>
-                <SkeletonBlock width="55%" height={19} />
-                <View style={homeStyles.evaluationActions}>
-                  <SkeletonBlock width={112} height={44} radius={0} />
-                  <SkeletonBlock width={109} height={44} radius={0} />
+            <View style={styles.card}>
+              <SkeletonBlock width="24%" height={19} />
+              {(agenda?.map((event) => event.id) ?? [1, 2, 3]).map((id) => (
+                <EventCardSkeleton key={id} />
+              ))}
+              {(events.hasNextPage || events.isPending) && (
+                <View style={homeStyles.loadMore}>
+                  <SkeletonBlock width={72} height={18} />
                 </View>
-                <SkeletonBlock width="68%" height={18} />
-              </View>
-              <View style={styles.card}>
-                <SkeletonBlock width="24%" height={19} />
-                {(agenda?.map((event) => event.id) ?? [1, 2, 3]).map((id) => (
-                  <EventCardSkeleton key={id} />
-                ))}
-                {(events.hasNextPage || events.isPending) && (
-                  <View style={homeStyles.loadMore}>
-                    <SkeletonBlock width={72} height={18} />
-                  </View>
-                )}
-              </View>
-            </>
+              )}
+            </View>
           )}
           <View style={styles.card}>
             <SkeletonBlock width="48%" height={19} />
@@ -150,39 +183,10 @@ export function ProfileScreen({ userId }: { userId?: number }) {
       </Screen>
     );
 
-  if (!token)
-    return (
-      <Screen>
-        <Text style={styles.title}>Intra42</Text>
-        <Card title="Welcome">
-          <Text style={styles.muted}>Sign in with your 42 account.</Text>
-          <Button
-            title={busy ? "Signing in…" : "Sign in with 42"}
-            disabled={busy}
-            onPress={() => {
-              setBusy(true);
-              setError("");
-              void signIn()
-                .catch((reason) =>
-                  setError(reason instanceof Error ? reason.message : "Sign-in failed."),
-                )
-                .finally(() => setBusy(false));
-            }}
-          />
-          {error && <Text accessibilityRole="alert">{error}</Text>}
-        </Card>
-      </Screen>
-    );
-  const upcoming = evaluations.data?.filter(
-    (item) => !item.filled_at && Date.parse(item.begin_at) >= Date.now(),
-  );
-  const evaluationActions = [
-    { id: "feedback", label: "Feedback logs", onPress: () => router.push("/feedbacks") },
-    { id: "slots", label: "Manage slots", onPress: () => router.navigate("/slots") },
-  ];
+  if (!token) return <SignIn />;
   if (!user)
     return (
-      <Screen scrollUnderStatusBar={ownHome}>
+      <Screen scrollUnderStatusBar={ownHome} underHeader={!ownHome}>
         <Card title="Profile">
           <QueryMessage pending={false} error={profile.error} empty="No profile." />
           <Button title="Try again" onPress={() => void refreshProfile()} />
@@ -192,6 +196,8 @@ export function ProfileScreen({ userId }: { userId?: number }) {
   return (
     <Screen
       scrollUnderStatusBar={ownHome}
+      underHeader={!ownHome}
+      overlay={toast ? <Toast {...toast} /> : null}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -209,39 +215,40 @@ export function ProfileScreen({ userId }: { userId?: number }) {
         course={course}
         palette={palette}
         onCourseChange={setSelectedCursusId}
-      />
-      {ownHome && (
-        <Card title="Pending evaluations">
-          <View style={homeStyles.evaluationActions}>
-            {evaluationActions.map(({ id, label, onPress }) => (
-              <Pressable
-                key={id}
-                accessibilityRole="button"
-                onPress={onPress}
-                style={({ pressed }) => [
-                  homeStyles.evaluationAction,
-                  pressed && homeStyles.pressedAction,
-                ]}
-              >
-                <Text style={homeStyles.evaluationActionText}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-          {upcoming?.length ? (
-            upcoming.map((item) => (
-              <Text key={item.id} style={styles.text}>
-                {item.scale?.name ?? "Evaluation"} · {new Date(item.begin_at).toLocaleString()}
-              </Text>
-            ))
-          ) : (
-            <QueryMessage
-              pending={profile.isPending || (!!user && evaluations.isPending)}
-              error={profile.error ?? evaluations.error}
-              empty="No pending evaluations."
-            />
-          )}
-        </Card>
+        savingTitle={titleMutation.isPending}
+        onTitleChange={
+          ownHome
+            ? (titleId) => {
+                hideToast();
+                titleMutation.mutate(titleId, {
+                  onSuccess: () => showToast("Title updated."),
+                  onError: (error) => showToast(error.message, true),
+                });
+              }
+            : undefined
+        }
+      >
+        <Alumnization
+          key={`alumnization-${user.id}`}
+          countdown={alumnization.data}
+          alumnizedAt={user.alumnized_at}
+          palette={palette}
+        />
+        {course?.cursus.id === 21 && (
+          <ProfileProgress key={`progress-${user.id}`} pace={pace} attendance={attendance} />
+        )}
+      </ProfileCard>
+      {!ownHome && (
+        <ProfileResults
+          key={`results-${user.id}`}
+          userId={user.id}
+          cursusId={course?.cursus.id}
+          achievements={achievements}
+          pending={awards.isPending}
+          error={awards.error}
+        />
       )}
+      {ownHome && <PendingEvaluations />}
       {ownHome && (
         <Card title="Agenda">
           {agenda?.length ? (
@@ -274,29 +281,58 @@ export function ProfileScreen({ userId }: { userId?: number }) {
         </Card>
       )}
       <Card title="Ongoing projects">
-        {ownHome && (
-          <View style={homeStyles.evaluationActions}>
-            {projectActions.map(({ label, href }) => (
+        <View style={homeStyles.evaluationActions}>
+          {projectActions.map(({ label, href }) => (
+            <Pressable
+              key={href}
+              accessibilityRole="link"
+              onPress={() =>
+                router.push({ pathname: href, params: ownHome ? {} : { userId: String(user.id) } })
+              }
+              style={({ pressed }) => [
+                homeStyles.evaluationAction,
+                pressed && homeStyles.pressedAction,
+              ]}
+            >
+              <Text style={homeStyles.evaluationActionText}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        {ongoingProjects?.length ? (
+          ongoingProjects.map((item) => {
+            const slug = item.project.slug ?? item.project.id?.toString();
+            return (
               <Pressable
-                key={href}
+                key={item.id}
                 accessibilityRole="link"
-                onPress={() => router.push(href)}
+                accessibilityLabel={`Open ${user.login}'s ${item.project.name}`}
+                disabled={!slug}
+                onPress={() => {
+                  if (slug)
+                    router.push({
+                      pathname: "/project/[slug]",
+                      params: { slug, userId: String(user.id), view: "mine" },
+                    });
+                }}
                 style={({ pressed }) => [
-                  homeStyles.evaluationAction,
-                  pressed && homeStyles.pressedAction,
+                  homeStyles.projectRow,
+                  pressed && homeStyles.projectRowPressed,
                 ]}
               >
-                <Text style={homeStyles.evaluationActionText}>{label}</Text>
+                {({ pressed }) => (
+                  <Text
+                    style={[
+                      styles.text,
+                      homeStyles.projectLink,
+                      pressed && homeStyles.projectLinkPressed,
+                    ]}
+                  >
+                    {item.project.name}
+                  </Text>
+                )}
               </Pressable>
-            ))}
-          </View>
-        )}
-        {ongoingProjects?.length ? (
-          ongoingProjects.map((item) => (
-            <Text key={item.id} style={styles.text}>
-              {item.project.name}
-            </Text>
-          ))
+            );
+          })
         ) : (
           <Text style={styles.muted}>No ongoing projects.</Text>
         )}
@@ -312,35 +348,37 @@ export function ProfileScreen({ userId }: { userId?: number }) {
           />
         )}
       </Card>
-      <Card title={awards.isError && !awards.data ? "Achievements" : "Last achievements"}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() =>
-            router.push({
-              pathname: "/achievements",
-              params: userId === undefined ? {} : { userId: String(userId) },
-            })
-          }
-          style={({ pressed }) => [
-            homeStyles.evaluationAction,
-            homeStyles.achievementAction,
-            pressed && homeStyles.pressedAction,
-          ]}
-        >
-          <Text style={homeStyles.evaluationActionText}>See all achievements</Text>
-        </Pressable>
-        {user && awards.isPending ? (
-          <SkeletonList cardHeight={76} />
-        ) : achievements.length ? (
-          achievements
-            .slice(0, 3)
-            .map(({ achievement }) => (
-              <AchievementRow key={achievement.id} achievement={achievement} />
-            ))
-        ) : (
-          <Text style={styles.muted}>No achievements to show.</Text>
-        )}
-      </Card>
+      {ownHome && (
+        <Card title={awards.isError && !awards.data ? "Achievements" : "Last achievements"}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({
+                pathname: "/achievements",
+                params: userId === undefined ? {} : { userId: String(userId) },
+              })
+            }
+            style={({ pressed }) => [
+              homeStyles.evaluationAction,
+              homeStyles.achievementAction,
+              pressed && homeStyles.pressedAction,
+            ]}
+          >
+            <Text style={homeStyles.evaluationActionText}>See all achievements</Text>
+          </Pressable>
+          {user && awards.isPending ? (
+            <SkeletonList cardHeight={76} />
+          ) : achievements.length ? (
+            achievements
+              .slice(0, 3)
+              .map(({ achievement }) => (
+                <AchievementRow key={achievement.id} achievement={achievement} />
+              ))
+          ) : (
+            <Text style={styles.muted}>No achievements to show.</Text>
+          )}
+        </Card>
+      )}
       {ownHome && (
         <Pressable
           accessibilityRole="button"
@@ -369,6 +407,15 @@ export function ProfileScreen({ userId }: { userId?: number }) {
 const logoutRed = "#b42318";
 
 const homeStyles = StyleSheet.create({
+  projectRow: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  projectRowPressed: { backgroundColor: "#f4f3f5" },
+  projectLink: { color: theme.tealText },
+  projectLinkPressed: { color: "#006b6d" },
   skeleton: { gap: theme.spacing },
   evaluationActions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   evaluationAction: {

@@ -39,11 +39,30 @@ export function hostId(host: string) {
   return host.replace(/[. =]/g, "").toLowerCase();
 }
 
-export function mapViewport(box: number[], seats: { x: number; y: number }[]) {
-  if (!seats.length) return box;
-  const left = Math.max(box[0], Math.min(...seats.map((seat) => seat.x)) - 8);
-  const top = Math.max(box[1], Math.min(...seats.map((seat) => seat.y)) - 8);
-  return [left, top, box[0] + box[2] - left, box[1] + box[3] - top];
+export function mapViewport(
+  box: number[],
+  seats: { x: number; y: number; width: number; height: number }[],
+) {
+  // Seat positions cannot describe the bounds of walls, rotated furniture or labels.
+  // Preserve the complete SVG and include seats extending beyond its original viewBox.
+  const left = Math.min(box[0], ...seats.map((seat) => seat.x));
+  const top = Math.min(box[1], ...seats.map((seat) => seat.y));
+  const right = Math.max(box[0] + box[2], ...seats.map((seat) => seat.x + seat.width));
+  const bottom = Math.max(box[1] + box[3], ...seats.map((seat) => seat.y + seat.height));
+  const padding = Math.max(16, Math.max(right - left, bottom - top) * 0.02);
+  return [left - padding, top - padding, right - left + padding * 2, bottom - top + padding * 2];
+}
+
+export function mapInitialOffset(
+  viewport: number[],
+  seats: { x: number; y: number }[],
+  scale: number,
+) {
+  if (!seats.length) return { x: 0, y: 0 };
+  return {
+    x: Math.max(0, Math.min(...seats.map((seat) => seat.x)) - viewport[0] - 48) * scale,
+    y: Math.max(0, Math.min(...seats.map((seat) => seat.y)) - viewport[1] - 32) * scale,
+  };
 }
 
 export function hideOccupiedPlaceholders(xml: string, hosts: Iterable<string>) {

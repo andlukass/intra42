@@ -10,15 +10,31 @@ export default function Root() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen
             name="feedbacks"
-            options={{ headerShown: true, title: "", headerBackButtonDisplayMode: "minimal" }}
+            options={{
+              headerShown: true,
+              title: "Feedbacks you made",
+              headerBackButtonDisplayMode: "minimal",
+            }}
           />
           <Stack.Screen
             name="evaluation-logs"
-            options={{ headerShown: true, title: "", headerBackButtonDisplayMode: "minimal" }}
+            options={{
+              headerShown: true,
+              title: "Evaluation logs",
+              headerBackButtonDisplayMode: "minimal",
+            }}
           />
           <Stack.Screen
             name="quests"
-            options={{ headerShown: true, title: "", headerBackButtonDisplayMode: "minimal" }}
+            options={{
+              headerShown: true,
+              title: "Quest list",
+              headerBackButtonDisplayMode: "minimal",
+            }}
+          />
+          <Stack.Screen
+            name="marks"
+            options={{ headerShown: true, title: "Marks", headerBackButtonDisplayMode: "minimal" }}
           />
           <Stack.Screen
             name="achievements"
@@ -37,6 +53,14 @@ export default function Root() {
             }}
           />
           <Stack.Screen
+            name="project-students"
+            options={{
+              headerShown: true,
+              title: "Project students",
+              headerBackButtonDisplayMode: "minimal",
+            }}
+          />
+          <Stack.Screen
             name="project-list"
             options={{
               headerShown: true,
@@ -48,7 +72,7 @@ export default function Root() {
             name="project/[slug]"
             options={{
               headerShown: true,
-              title: "Project",
+              title: "",
               headerBackButtonDisplayMode: "minimal",
             }}
           />

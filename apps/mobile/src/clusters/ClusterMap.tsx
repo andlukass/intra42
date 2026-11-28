@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -12,14 +12,15 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SvgXml } from "react-native-svg";
+import { type JsxAST, SvgAst } from "react-native-svg";
 import { theme } from "../theme";
 import { Button, QueryMessage, SkeletonBlock } from "../ui";
 import { useDecodedAvatar } from "../useDecodedAvatar";
+import { clusterArtworkOptions } from "./artwork";
 import {
   type Cluster,
-  hideOccupiedPlaceholders,
   hostId,
+  mapInitialOffset,
   mapViewport,
   parseMap,
   type Workstation,
@@ -27,16 +28,51 @@ import {
 import { PhotoSkeleton } from "./PhotoSkeleton";
 import { SeatTooltip, type SelectedOccupant } from "./SeatTooltip";
 
+const MapArtwork = memo(function MapArtwork({
+  ast,
+  viewBox,
+  width,
+  height,
+}: {
+  ast: JsxAST;
+  viewBox: string;
+  width: number;
+  height: number;
+}) {
+  return <SvgAst ast={ast} override={{ viewBox, width, height }} />;
+});
+
 export function ClusterMapSkeleton() {
   const { height } = useWindowDimensions();
   return (
-    <View style={s.content}>
-      <SkeletonBlock width="58%" height={18} />
-      <View style={s.skeletonHint}>
-        <SkeletonBlock width="96%" height={14} />
-        <SkeletonBlock width="44%" height={14} />
+    <View
+      accessibilityLabel="Loading cluster map"
+      accessibilityState={{ busy: true }}
+      style={s.map}
+    >
+      <View style={[s.details, s.summary]}>
+        {[112, 100].map((width) => (
+          <View key={width} style={s.legendItem}>
+            <SkeletonBlock width={10} height={10} radius={5} />
+            <SkeletonBlock width={width} height={16} />
+          </View>
+        ))}
       </View>
-      <SkeletonBlock height={Math.max(160, height - 260)} />
+      <View style={[s.skeletonCanvas, { height: Math.max(280, height - 360) }]}>
+        {[0, 1, 2, 3].map((row) => (
+          <View key={row} style={s.skeletonRow}>
+            {[0, 1, 2].map((desk) => (
+              <View key={desk} style={s.skeletonDesk}>
+                <SkeletonBlock height={30} radius={3} color="#eceeef" />
+                <View style={s.skeletonSeats}>
+                  <SkeletonBlock width={18} height={18} radius={3} color="#eceeef" />
+                  <SkeletonBlock width={18} height={18} radius={3} color="#eceeef" />
+                </View>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -81,37 +117,45 @@ export function ClusterMap({
       return parseMap(await response.text());
     },
   });
-  if (!map.data)
+  const occupied = useMemo(
+    () =>
+      new Map(occupancy.filter((item) => !item.end_at).map((item) => [hostId(item.host), item])),
+    [occupancy],
+  );
+  const occupiedHosts = useMemo(
+    () => (map.data?.seats ?? []).filter((seat) => occupied.has(seat.id)).map((seat) => seat.id),
+    [map.data, occupied],
+  );
+  const artwork = useQuery(clusterArtworkOptions(cluster.image, map.data?.xml, occupiedHosts));
+  if (!map.data || !artwork.data)
     return (
       <ScrollView refreshControl={refreshControl} contentContainerStyle={[s.content, s.details]}>
         <QueryMessage
-          pending={map.isPending}
-          error={map.error}
+          pending={map.isPending || (!map.isError && artwork.isPending)}
+          error={map.error ?? artwork.error}
           empty="No map available."
           skeleton={<ClusterMapSkeleton />}
         />
-        {map.isError && <Button title="Retry map" onPress={() => void map.refetch()} />}
+        {(map.isError || artwork.isError) && (
+          <Button
+            title="Retry map"
+            onPress={() => void (map.data ? artwork.refetch() : map.refetch())}
+          />
+        )}
       </ScrollView>
     );
-  const { box, seats, xml } = map.data;
+  const { box, seats } = map.data;
   const viewport = mapViewport(box, seats);
   const scale = Math.max(1200, box[2] * 1.875) / box[2];
   const width = viewport[2] * scale;
   const height = viewport[3] * scale;
-  const occupied = new Map(
-    occupancy.filter((item) => !item.end_at).map((item) => [hostId(item.host), item]),
-  );
+  const initialOffset = mapInitialOffset(viewport, seats, scale);
   const knownHosts = new Set(seats.map((seat) => seat.id));
   const occupiedCount = [...occupied.keys()].filter((key) => knownHosts.has(key)).length;
 
   const mapContent = (
     <View style={{ width, height }}>
-      <SvgXml
-        xml={hideOccupiedPlaceholders(xml, occupied.keys())}
-        viewBox={viewport.join(" ")}
-        width={width}
-        height={height}
-      />
+      <MapArtwork ast={artwork.data} viewBox={viewport.join(" ")} width={width} height={height} />
       {seats.map((seat) => {
         const location = occupied.get(seat.id);
         return (
@@ -150,17 +194,27 @@ export function ClusterMap({
   return (
     <View style={s.map}>
       <View style={[s.content, s.details]}>
-        <Text style={s.summary}>
-          {occupiedCount} occupied · {seats.length - occupiedCount} available
-        </Text>
-        <Text style={s.hint}>Drag to move around the map. Tap a workstation for details.</Text>
+        <View style={s.summary}>
+          <View style={s.legendItem}>
+            <View style={[s.legendDot, { backgroundColor: theme.teal }]} />
+            <Text style={s.availableCount}>{seats.length - occupiedCount} available</Text>
+          </View>
+          <View style={s.legendItem}>
+            <View style={[s.legendDot, { backgroundColor: "#999" }]} />
+            <Text style={s.occupiedCount}>{occupiedCount} occupied</Text>
+          </View>
+        </View>
       </View>
       <ScrollView
+        contentOffset={Platform.OS === "ios" ? initialOffset : { x: 0, y: initialOffset.y }}
         refreshControl={refreshControl}
         nestedScrollEnabled
         pinchGestureEnabled
         maximumZoomScale={3}
         minimumZoomScale={0.28}
+        // iOS needs the full canvas size on the scroll content to pan on both axes.
+        contentContainerStyle={Platform.OS === "ios" ? { width, height } : undefined}
+        directionalLockEnabled={false}
         alwaysBounceVertical
         contentInsetAdjustmentBehavior="never"
         contentInset={mapInsets}
@@ -168,7 +222,7 @@ export function ClusterMap({
         style={s.scroll}
       >
         {Platform.OS === "android" ? (
-          <ScrollView horizontal nestedScrollEnabled>
+          <ScrollView horizontal nestedScrollEnabled contentOffset={{ x: initialOffset.x, y: 0 }}>
             {mapContent}
           </ScrollView>
         ) : (
@@ -181,12 +235,25 @@ export function ClusterMap({
 }
 
 const s = StyleSheet.create({
+  skeletonCanvas: {
+    backgroundColor: theme.surface,
+    borderTopWidth: 1,
+    borderColor: theme.border,
+    padding: 24,
+    gap: 36,
+    overflow: "hidden",
+  },
+  skeletonRow: { flexDirection: "row", gap: 24 },
+  skeletonDesk: { flex: 1, gap: 8 },
+  skeletonSeats: { flexDirection: "row", justifyContent: "space-around" },
   map: { flex: 1 },
   content: { gap: 10 },
-  details: { padding: theme.spacing },
-  skeletonHint: { gap: 4 },
-  summary: { color: theme.tealText, fontSize: 15, fontWeight: "600" },
-  hint: { color: theme.muted, fontSize: 13 },
+  details: { paddingVertical: theme.spacing, paddingHorizontal: theme.spacing + 16 },
+  summary: { flexDirection: "row", flexWrap: "wrap", columnGap: 28, rowGap: 8 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 9 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  availableCount: { color: theme.tealText, fontSize: 16, fontWeight: "600" },
+  occupiedCount: { color: theme.muted, fontSize: 16 },
   scroll: { flex: 1, borderTopWidth: 1, borderColor: theme.border, backgroundColor: "#fff" },
   seat: {
     position: "absolute",

@@ -14,7 +14,47 @@ const peer = {
   image: { link: "https://cdn.intra.42.fr/users/peer.jpg" },
 };
 
-function broker({ sessionStatus = 200, profile = peer, publicStatus = 200 } = {}) {
+test("search photos fetch the exact CDN result without looking up a user profile", async () => {
+  const server = broker({ nativeId: 42 });
+  const source = "https://cdn.intra.42.fr/users/hash/small_llopes-d.jpg";
+  const result = await server.request(
+    `/search-photo?${new URLSearchParams({ source })}`,
+    "Bearer portal_session",
+  );
+  assert.equal(result.status, 200);
+  assert.equal(result.body.source, source);
+  assert.match(result.body.uri, /^data:image\/jpeg;base64,/);
+  assert.equal(server.calls.filter(({ url }) => url === source).length, 1);
+  assert.ok(!server.calls.some(({ url }) => url.includes("/v2/users/") || url.endsWith("/v2/me")));
+});
+
+test("search photo proxy rejects arbitrary hosts, credentials, paths and duplicate sources", async () => {
+  const server = broker({ nativeId: 42 });
+  for (const source of [
+    "https://evil.example/users/photo.jpg",
+    "http://cdn.intra.42.fr/users/photo.jpg",
+    "https://user@cdn.intra.42.fr/users/photo.jpg",
+    "https://cdn.intra.42.fr/private/photo.jpg",
+    "https://cdn.intra.42.fr/users/photo.jpg?secret=1",
+  ]) {
+    assert.equal(
+      (
+        await server.request(
+          `/search-photo?${new URLSearchParams({ source })}`,
+          "Bearer portal_session",
+        )
+      ).status,
+      400,
+    );
+  }
+  assert.equal(
+    (await server.request("/search-photo?source=a&source=b", "Bearer portal_session")).status,
+    400,
+  );
+  assert.equal(server.calls.length, 0);
+});
+
+function broker({ sessionStatus = 200, profile = peer, publicStatus = 200, nativeId } = {}) {
   const calls = [];
   let handle;
   runInNewContext(source, {
@@ -27,6 +67,11 @@ function broker({ sessionStatus = 200, profile = peer, publicStatus = 200 } = {}
     },
     console: { log() {} },
     createHash,
+    handlePortal: async () => false,
+    portalIdentity: (req) =>
+      nativeId && req.headers.authorization === "Bearer portal_session"
+        ? { id: nativeId }
+        : undefined,
     createServer(callback) {
       handle = callback;
       return { listen() {} };
@@ -171,4 +216,16 @@ test("serves only official achievement images to a verified user", async () => {
     url: "https://cdn.intra.42.fr/achievement/image/1/badge.svg",
     authorization: "Bearer public-app-grant",
   });
+});
+
+test("serves native session photos without treating the opaque key as an upstream OAuth token", async () => {
+  const service = broker({ nativeId: 2 });
+  const photo = await service.request("/avatar?size=full", "Bearer portal_session");
+  assert.equal(photo.status, 200);
+  assert.equal(photo.body.userId, 2);
+  assert.equal(photo.body.uri, "data:image/jpeg;base64,AQID");
+  assert.ok(!service.calls.some(({ url }) => url.endsWith("/v2/me")));
+  const before = service.calls.length;
+  assert.equal((await service.request("/avatar?userId=2", "Bearer portal_unknown")).status, 401);
+  assert.equal(service.calls.length, before);
 });

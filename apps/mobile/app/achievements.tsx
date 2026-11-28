@@ -2,9 +2,10 @@ import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, SectionList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { AchievementRow } from "../src/achievements/AchievementRow";
+import { AchievementGroup } from "../src/achievements/AchievementGroup";
 import { CategoryIcon } from "../src/achievements/CategoryIcon";
 import { earnedAchievements } from "../src/achievements/earned";
+import { groupAchievements } from "../src/achievements/groups";
 import { useAchievementAwards, useAchievementCatalog, useProfile } from "../src/api";
 import { useSession } from "../src/session";
 import { theme } from "../src/theme";
@@ -33,8 +34,11 @@ export default function Achievements() {
   const profile = useProfile(id);
   const user = token ? profile.data : undefined;
   const awards = useAchievementAwards(user?.id);
-  const catalog = useAchievementCatalog(!!token);
+  const campusId =
+    user?.campus_users?.find((campus) => campus.is_primary)?.campus_id ?? user?.campus?.[0]?.id;
+  const catalog = useAchievementCatalog(campusId);
   const [category, setCategory] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState(new Set<string>());
   const earned = earnedAchievements(user?.achievements, awards.data);
   const earnedIds = new Set(earned.map(({ achievement }) => achievement.id));
   const unearned = user
@@ -47,9 +51,20 @@ export default function Achievements() {
     {
       key: "earned",
       locked: false,
-      data: earned.filter(({ achievement }) => !category || achievement.kind === category),
+      data: groupAchievements(
+        earned.filter(({ achievement }) => !category || achievement.kind === category),
+        catalog.data,
+      ),
     },
-    { key: "unearned", locked: true, data: unearned },
+    {
+      key: "unearned",
+      locked: true,
+      data: groupAchievements(
+        unearned,
+        [...(catalog.data ?? []), ...(user?.achievements ?? [])],
+        "unearned",
+      ),
+    },
   ].filter((section) => section.data.length > 0);
   const pending = loading || (!!token && profile.isPending);
 
@@ -58,8 +73,9 @@ export default function Achievements() {
       <SectionList
         {...scrollInsets}
         sections={sections}
+        extraData={expandedGroups}
         stickySectionHeadersEnabled={false}
-        keyExtractor={({ achievement }) => String(achievement.id)}
+        keyExtractor={({ key }) => key}
         contentContainerStyle={s.content}
         ListHeaderComponent={
           user ? (
@@ -88,7 +104,7 @@ export default function Achievements() {
           ) : null
         }
         ListEmptyComponent={
-          user && (catalog.isPending || catalog.isError) ? null : (
+          user && campusId && (catalog.isPending || catalog.isError) ? null : (
             <View style={s.header}>
               <QueryMessage
                 pending={pending}
@@ -117,14 +133,23 @@ export default function Achievements() {
           ) : null
         }
         renderItem={({ item, section }) => (
-          <AchievementRow
-            achievement={item.achievement}
-            earnedAt={item.earnedAt}
+          <AchievementGroup
+            group={item}
             locked={section.locked}
+            expanded={expandedGroups.has(`${user?.id}:${section.key}:${item.key}`)}
+            onToggle={() =>
+              setExpandedGroups((previous) => {
+                const next = new Set(previous);
+                const key = `${user?.id}:${section.key}:${item.key}`;
+                if (next.has(key)) next.delete(key);
+                else next.add(key);
+                return next;
+              })
+            }
           />
         )}
         ListFooterComponent={
-          user && (catalog.isPending || catalog.isError) ? (
+          user && campusId && (catalog.isPending || catalog.isError) ? (
             <View style={s.sectionHeading}>
               <QueryMessage
                 pending={catalog.isPending}

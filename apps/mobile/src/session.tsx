@@ -1,10 +1,19 @@
 import { useQueryClient } from "@tanstack/react-query";
-import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
-import * as WebBrowser from "expo-web-browser";
-import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { AppState } from "react-native";
+import { requestSession, SessionError } from "./session-api";
+import { browserSignIn } from "./session-browser";
+import { type Token, validToken } from "./session-token";
 
-type Token = { accessToken: string; refreshToken?: string; expiresAt: number };
 type Session = {
   token: Token | null;
   signIn: () => Promise<void>;
@@ -12,58 +21,84 @@ type Session = {
   loading: boolean;
 };
 const context = createContext<Session | null>(null);
-const storageKey = "intra42.oauth.v1";
-function oauthOrigin(value: string | undefined) {
+const storageKey = "intra42.portal.v1";
+function serviceOrigin(value: string | undefined) {
   if (!value) return;
-  const url = new URL(value);
-  const local =
-    __DEV__ && url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
-  if ((url.protocol === "https:" || local) && !url.username && !url.password) return url.origin;
+  try {
+    const url = new URL(value);
+    const local =
+      __DEV__ && url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+    if (
+      (url.protocol === "https:" || local) &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash
+    )
+      return url.origin + url.pathname.replace(/\/+$/, "");
+  } catch {
+    return undefined;
+  }
 }
-export const broker = oauthOrigin(process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL);
+export const broker = serviceOrigin(process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL);
 export const demo = __DEV__ && process.env.EXPO_PUBLIC_INTRA42_DEMO === "1";
 const demoToken = { accessToken: "demo", expiresAt: Infinity };
 
-async function exchange(path: string, payload: object): Promise<Token> {
-  if (!broker) throw new Error("Configure the HTTPS OAuth service URL.");
-  const response = await fetch(broker + path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) throw new Error(`42 sign-in returned HTTP ${response.status}.`);
-  const token = await response.json();
-  if (typeof token.accessToken !== "string" || !Number.isFinite(token.expiresAt)) {
-    throw new Error("Invalid OAuth response.");
-  }
-  return token;
+async function exchange(
+  path: string,
+  token?: string,
+  credentials?: URLSearchParams,
+): Promise<Token> {
+  const data = await requestSession(broker, path, token, credentials);
+  if (!validToken(data)) throw new Error("Invalid sign-in response.");
+  return data;
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<Token | null>(demo ? demoToken : null);
   const [loading, setLoading] = useState(!demo);
   const client = useQueryClient();
-  const signingOut = useRef(false);
+  const revision = useRef(0);
+  const storage = useRef(Promise.resolve());
+
+  const save = useCallback((next: Token | null) => {
+    const operation = storage.current
+      .catch(() => {})
+      .then(() =>
+        next
+          ? SecureStore.setItemAsync(storageKey, JSON.stringify(next))
+          : SecureStore.deleteItemAsync(storageKey),
+      );
+    storage.current = operation;
+    return operation;
+  }, []);
+
   useEffect(() => {
     if (demo) return;
     let alive = true;
+    const version = revision.current;
     async function restore() {
       try {
         const saved = await SecureStore.getItemAsync(storageKey);
-        if (!saved || !alive) return;
-        const previous: Token = JSON.parse(saved);
-        const next =
-          previous.expiresAt > Date.now()
-            ? previous
-            : previous.refreshToken
-              ? await exchange("/refresh", { refreshToken: previous.refreshToken })
-              : null;
-        if (alive && next) {
-          await SecureStore.setItemAsync(storageKey, JSON.stringify(next));
-          if (alive) setToken(next);
+        if (!saved || !alive || version !== revision.current) return;
+        const previous: unknown = JSON.parse(saved);
+        if (!validToken(previous)) {
+          await save(null);
+          return;
         }
+        let next = previous;
+        try {
+          next = await exchange("restore", previous.accessToken);
+        } catch (error) {
+          if (error instanceof SessionError && [400, 401, 403].includes(error.status)) {
+            if (alive && version === revision.current) await save(null);
+            return;
+          }
+        }
+        // The refresh effect retries expired sessions after a temporary network failure.
+        if (alive && version === revision.current) setToken(next);
       } catch {
-        if (alive) setToken(null);
+        if (alive && version === revision.current) setToken(null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -72,75 +107,69 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [save]);
 
   async function logout() {
-    signingOut.current = true;
+    revision.current++;
+    const current = token;
     setToken(null);
     client.clear();
-    await SecureStore.deleteItemAsync(storageKey);
+    await save(null);
+    if (broker && current && current !== demoToken) {
+      await requestSession(broker, "logout", current.accessToken).catch(() => {});
+    }
   }
 
   useEffect(() => {
     if (!token || token === demoToken) return;
     let active = true;
+    let pending = false;
+    let timer: ReturnType<typeof setTimeout>;
     const current = token;
-    const timer = setTimeout(
-      async () => {
-        try {
-          if (!current.refreshToken) throw new Error("Session expired.");
-          const next = await exchange("/refresh", { refreshToken: current.refreshToken });
-          if (!active || signingOut.current) return;
-          await SecureStore.setItemAsync(storageKey, JSON.stringify(next));
-          if (active && !signingOut.current) setToken(next);
-        } catch {
-          if (active) {
-            setToken(null);
-            client.clear();
-          }
-        }
-      },
-      Math.max(0, current.expiresAt - Date.now()),
-    );
+    const version = revision.current;
+    async function renew() {
+      if (pending) return;
+      pending = true;
+      try {
+        if (!current.refreshToken) throw new SessionError("Session expired.", 401);
+        const next = await exchange("refresh", current.refreshToken);
+        if (!active || version !== revision.current) return;
+        await save(next);
+        if (active && version === revision.current) setToken(next);
+      } catch (error) {
+        if (!active || version !== revision.current) return;
+        if (error instanceof SessionError && [400, 401, 403].includes(error.status)) {
+          setToken(null);
+          client.clear();
+          await save(null).catch(() => {});
+        } else timer = setTimeout(() => void renew(), 15_000);
+      } finally {
+        pending = false;
+      }
+    }
+    const lead = current.refreshToken ? 30_000 : 0;
+    timer = setTimeout(() => void renew(), Math.max(0, current.expiresAt - Date.now() - lead));
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && current.expiresAt - Date.now() <= lead) {
+        clearTimeout(timer);
+        void renew();
+      }
+    });
     return () => {
       active = false;
       clearTimeout(timer);
+      subscription.remove();
     };
-  }, [client, token]);
+  }, [client, token, save]);
 
   async function signIn() {
-    signingOut.current = false;
-    if (demo) {
-      setToken(demoToken);
-      return;
-    }
-    if (!broker) throw new Error("Configure the HTTPS OAuth service URL.");
-    const state = (await Crypto.getRandomBytesAsync(32)).reduce(
-      (s, byte) => s + byte.toString(16).padStart(2, "0"),
-      "",
-    );
-    const verifier = (await Crypto.getRandomBytesAsync(32)).reduce(
-      (s, byte) => s + byte.toString(16).padStart(2, "0"),
-      "",
-    );
-    const challenge = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, verifier);
-    const callback = "intra42://oauth";
-    const result = await WebBrowser.openAuthSessionAsync(
-      `${broker}/authorize?${new URLSearchParams({ state, challenge })}`,
-      callback,
-    );
-    if (result.type !== "success") return;
-    const url = new URL(result.url);
-    if (
-      url.protocol !== "intra42:" ||
-      url.hostname !== "oauth" ||
-      url.searchParams.get("state") !== state
-    ) {
-      throw new Error("The OAuth callback was invalid.");
-    }
-    if (url.searchParams.get("status") !== "ok") throw new Error("42 declined authorization.");
-    const next = await exchange("/exchange", { state, verifier });
-    await SecureStore.setItemAsync(storageKey, JSON.stringify(next));
+    const version = ++revision.current;
+    const next = demo ? demoToken : await browserSignIn(broker);
+    if (!next) return;
+    if (version !== revision.current) return;
+    await save(next);
+    if (version !== revision.current) return;
+    client.clear();
     setToken(next);
   }
 

@@ -1,21 +1,13 @@
 import { Image, type ImageRef } from "expo-image";
-import { useRef, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { type ReactNode, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import type { Profile } from "../api";
-import { theme } from "../theme";
 import { SkeletonBlock } from "../ui";
 import type { ProfilePalette } from "./coalition";
 import { ProfilePhotoViewer } from "./ProfilePhotoViewer";
+import { ProfileSelector } from "./ProfileSelector";
 
 export function ProfileCardSkeleton({ palette }: { palette: ProfilePalette }) {
   const color = palette.skeleton;
@@ -54,7 +46,7 @@ export function ProfileCardSkeleton({ palette }: { palette: ProfilePalette }) {
         </View>
       </View>
       <View style={s.contact}>
-        {(["42%", "77%", "35%", "48%"] as const).map((width) => (
+        {(["77%", "35%", "48%"] as const).map((width) => (
           <View key={width} style={s.contactRow}>
             <SkeletonBlock color={color} width={19} height={19} />
             <SkeletonBlock color={color} width={width} height={19} />
@@ -83,14 +75,18 @@ function ProfileContact({
   campus?: string;
   accentColor: string;
 }) {
+  const [tooltip, setTooltip] = useState<{
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>();
+  const window = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const tooltipWidth = Math.min(260, window.width - insets.left - insets.right - 16);
   const date = /^(\d{4})-(\d{2})-(\d{2})(?:T|$)/.exec(user.anonymize_date ?? "");
   const rows = [
-    {
-      label: "Phone",
-      value: contactValue(user.phone),
-      path: "M7 3H5a2 2 0 0 0-2 2 16 16 0 0 0 16 16 2 2 0 0 0 2-2v-2l-5-2-2 2a12 12 0 0 1-7-7l2-2-2-5Z",
-      accent: true,
-    },
     {
       label: "Email",
       value: contactValue(user.email),
@@ -104,6 +100,7 @@ function ProfileContact({
     },
     {
       label: "Data erasure date",
+      description: "Personal data erasure date",
       value: date ? `${date[3]}/${date[2]}/${date[1]}` : "-",
       path: "M4 21V10a8 8 0 0 1 16 0v11l-4-3-4 3-4-3-4 3ZM9 10h.01M15 10h.01",
     },
@@ -111,8 +108,21 @@ function ProfileContact({
 
   return (
     <View style={s.contact}>
-      {rows.map(({ label, value, path, accent }) => (
-        <View key={label} style={s.contactRow}>
+      {rows.map(({ label, description = label, value, path, accent }) => (
+        <Pressable
+          key={label}
+          style={s.contactRow}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}: ${value}`}
+          accessibilityHint="Shows the field description"
+          accessibilityState={{ expanded: tooltip?.label === description }}
+          hitSlop={6}
+          onPress={(event) => {
+            event.currentTarget.measureInWindow((x, y, width, height) => {
+              setTooltip({ label: description, x, y, width, height });
+            });
+          }}
+        >
           <Svg width={19} height={19} viewBox="0 0 24 24" accessible={false}>
             <Path
               d={path}
@@ -124,14 +134,56 @@ function ProfileContact({
             />
           </Svg>
           <Text
-            selectable
-            accessibilityLabel={`${label}: ${value}`}
+            accessible={false}
             style={[s.contactText, accent && value !== "-" && { color: accentColor }]}
           >
             {value}
           </Text>
-        </View>
+        </Pressable>
       ))}
+      {tooltip && (
+        <Modal
+          transparent
+          visible
+          animationType="fade"
+          statusBarTranslucent
+          navigationBarTranslucent
+          onRequestClose={() => setTooltip(undefined)}
+        >
+          <View style={s.tooltipOverlay} accessibilityViewIsModal>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close field description"
+              style={StyleSheet.absoluteFill}
+              onPress={() => setTooltip(undefined)}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tooltip.label}
+              accessibilityHint="Tap to close"
+              onPress={() => setTooltip(undefined)}
+              style={[
+                s.tooltip,
+                {
+                  width: tooltipWidth,
+                  left: Math.max(
+                    insets.left + 8,
+                    Math.min(
+                      tooltip.x + tooltip.width / 2 - tooltipWidth / 2,
+                      window.width - insets.right - tooltipWidth - 8,
+                    ),
+                  ),
+                  ...(tooltip.y - insets.top > 80
+                    ? { bottom: window.height - tooltip.y + 8 }
+                    : { top: tooltip.y + tooltip.height + 8 }),
+                },
+              ]}
+            >
+              <Text style={s.tooltipText}>{tooltip.label}</Text>
+            </Pressable>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -143,6 +195,9 @@ export function ProfileCard({
   course: current,
   palette,
   onCourseChange,
+  onTitleChange,
+  savingTitle = false,
+  children,
 }: {
   user: Profile;
   avatar?: ImageRef | null;
@@ -150,27 +205,16 @@ export function ProfileCard({
   course?: NonNullable<Profile["cursus_users"]>[number];
   palette: ProfilePalette;
   onCourseChange: (id: number) => void;
+  onTitleChange?: (id: number) => void;
+  savingTitle?: boolean;
+  children?: ReactNode;
 }) {
   const [photoVisible, setPhotoVisible] = useState(false);
-  const cursusButton = useRef<View>(null);
-  const [cursusAnchor, setCursusAnchor] = useState<{
-    right: number;
-    top: number;
-    bottom: number;
-  }>();
-  const window = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const selectedTitleId = user.titles_users?.find((entry) => entry.selected)?.title_id;
   const titleTemplate = user.titles?.find((title) => title.id === selectedTitleId)?.name;
   const title = titleTemplate?.replaceAll("%login", user.login) || user.login;
   const courses = user.cursus_users ?? [];
   const avatarStyle = [s.avatar, { borderColor: palette.accent }];
-  const menuWidth = Math.min(280, window.width - insets.left - insets.right - 16);
-  const menuHeight = Math.min(courses.length * 44, 264);
-  const spaceBelow = cursusAnchor ? window.height - insets.bottom - cursusAnchor.bottom - 16 : 0;
-  const spaceAbove = cursusAnchor ? cursusAnchor.top - insets.top - 16 : 0;
-  const opensAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
-  const menuMaxHeight = Math.max(0, Math.min(264, opensAbove ? spaceAbove : spaceBelow));
 
   const level = current?.level ?? 0;
   const progress = Math.min(99, Math.round((level % 1) * 100));
@@ -185,7 +229,14 @@ export function ProfileCard({
     <View style={[s.banner, { backgroundColor: palette.background }]}>
       <View style={s.card}>
         <View style={s.availability}>
-          <View style={s.dot} />
+          <View
+            style={[
+              s.dot,
+              user.location?.trim() && user.location.trim().toLowerCase() !== "unavailable"
+                ? s.availableDot
+                : null,
+            ]}
+          />
           <Text style={s.status}>{user.location || "unavailable"}</Text>
         </View>
         <View style={s.identity}>
@@ -212,7 +263,25 @@ export function ProfileCard({
             <Text accessibilityRole="header" style={s.heading}>
               {user.displayname || user.login}
             </Text>
-            <Text style={s.profileTitle}>{title}</Text>
+            {onTitleChange && user.titles?.length ? (
+              <ProfileSelector
+                name="title"
+                label={title}
+                options={[
+                  { id: 0, label: user.login },
+                  ...user.titles.map((item) => ({
+                    id: item.id,
+                    label: item.name.replaceAll("%login", user.login),
+                  })),
+                ]}
+                selectedId={selectedTitleId ?? 0}
+                onChange={onTitleChange}
+                disabled={savingTitle}
+                textStyle={s.profileTitle}
+              />
+            ) : (
+              <Text style={s.profileTitle}>{title}</Text>
+            )}
           </View>
         </View>
         {current && (
@@ -222,31 +291,18 @@ export function ProfileCard({
               <View style={s.labels}>
                 <Text style={s.label}>{progress}%</Text>
                 {courses.length > 1 ? (
-                  <Pressable
-                    ref={cursusButton}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Choose course. Current course: ${cursusLabel(current)}`}
-                    accessibilityState={{ expanded: !!cursusAnchor }}
-                    hitSlop={6}
-                    onPress={() => {
-                      cursusButton.current?.measureInWindow((x, y, width, height) => {
-                        setCursusAnchor({ right: x + width, top: y, bottom: y + height });
-                      });
-                    }}
+                  <ProfileSelector
+                    name="course"
+                    label={cursusLabel(current)}
+                    options={courses.map((course) => ({
+                      id: course.cursus.id,
+                      label: cursusLabel(course),
+                    }))}
+                    selectedId={current.cursus.id}
+                    onChange={onCourseChange}
                     style={s.cursusButton}
-                  >
-                    <Text style={[s.label, s.cursus]}>{cursusLabel(current)}</Text>
-                    <Svg width={14} height={14} viewBox="0 0 24 24" accessible={false}>
-                      <Path
-                        d={cursusAnchor ? "m5 15 7-7 7 7" : "m5 9 7 7 7-7"}
-                        fill="none"
-                        stroke="#fff"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </Svg>
-                  </Pressable>
+                    textStyle={s.cursus}
+                  />
                 ) : (
                   <Text style={[s.label, s.cursus]}>{cursusLabel(current)}</Text>
                 )}
@@ -277,6 +333,7 @@ export function ProfileCard({
         </View>
       </View>
       <ProfileContact user={user} campus={campus} accentColor={palette.contact} />
+      {children}
       {photoVisible && avatar && (
         <ProfilePhotoViewer
           key={user.id}
@@ -284,68 +341,6 @@ export function ProfileCard({
           preview={avatar}
           onClose={() => setPhotoVisible(false)}
         />
-      )}
-      {current && courses.length > 1 && cursusAnchor && (
-        <Modal
-          transparent
-          visible
-          animationType="fade"
-          statusBarTranslucent
-          navigationBarTranslucent
-          onRequestClose={() => setCursusAnchor(undefined)}
-        >
-          <View style={s.cursusOverlay} accessibilityViewIsModal>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close course selector"
-              style={StyleSheet.absoluteFill}
-              onPress={() => setCursusAnchor(undefined)}
-            />
-            <View
-              style={[
-                s.cursusOptions,
-                {
-                  width: menuWidth,
-                  left: Math.max(
-                    insets.left + 8,
-                    Math.min(cursusAnchor.right, window.width - insets.right - 8) - menuWidth,
-                  ),
-                  ...(opensAbove
-                    ? { bottom: window.height - cursusAnchor.top + 8 }
-                    : { top: cursusAnchor.bottom + 8 }),
-                },
-              ]}
-            >
-              <ScrollView style={[s.cursusList, { maxHeight: menuMaxHeight }]}>
-                {courses.map((course) => {
-                  const selected = course.cursus.id === current.cursus.id;
-                  return (
-                    <Pressable
-                      key={course.cursus.id}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked: selected }}
-                      onPress={() => {
-                        onCourseChange(course.cursus.id);
-                        setCursusAnchor(undefined);
-                      }}
-                      style={({ pressed }) => [
-                        s.cursusOption,
-                        (selected || pressed) && s.activeCursus,
-                      ]}
-                    >
-                      <Text style={s.cursusOptionLabel}>{cursusLabel(course)}</Text>
-                      {selected && (
-                        <Text accessible={false} style={s.cursusCheck}>
-                          ✓
-                        </Text>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
       )}
     </View>
   );
@@ -376,6 +371,7 @@ const s = StyleSheet.create({
     backgroundColor: "#333",
   },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#ffb733" },
+  availableDot: { backgroundColor: "#34c759" },
   status: { color: "#eee", fontSize: 13, fontStyle: "italic" },
   identity: { flexDirection: "row", gap: 12, padding: 16, alignItems: "center" },
   avatar: { width: 76, height: 76, borderRadius: 38, borderWidth: 2 },
@@ -384,7 +380,7 @@ const s = StyleSheet.create({
   name: { flex: 1, gap: 4 },
   heading: { fontSize: 22, lineHeight: 27, fontWeight: "800", color: "#fff" },
   white: { fontSize: 15, color: "#fff" },
-  profileTitle: { fontSize: 15, lineHeight: 20, color: "#fff" },
+  profileTitle: { fontSize: 15, lineHeight: 20, color: "#fff", fontWeight: "400" },
   level: {
     flexDirection: "row",
     alignItems: "center",
@@ -404,25 +400,7 @@ const s = StyleSheet.create({
   },
   label: { color: "#fff", fontSize: 13, lineHeight: 18, fontWeight: "700" },
   cursus: { flex: 1, textAlign: "right" },
-  cursusButton: { flex: 1, minHeight: 32, flexDirection: "row", alignItems: "center", gap: 6 },
-  cursusOverlay: { flex: 1 },
-  cursusOptions: {
-    position: "absolute",
-    borderRadius: 8,
-    backgroundColor: theme.surface,
-    boxShadow: "0px 4px 16px rgba(0, 0, 0, 0.24)",
-  },
-  cursusList: { borderRadius: 8 },
-  cursusOption: {
-    minHeight: 44,
-    padding: 10,
-    gap: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  activeCursus: { backgroundColor: "#e6f8f8" },
-  cursusOptionLabel: { flex: 1, color: theme.ink, fontSize: 14, fontWeight: "600" },
-  cursusCheck: { color: theme.tealText, fontWeight: "700" },
+  cursusButton: { flex: 1 },
   track: { height: 10, backgroundColor: "#eef2f6", borderRadius: 4, overflow: "hidden" },
   progress: { height: "100%" },
   stats: {
@@ -446,4 +424,15 @@ const s = StyleSheet.create({
   },
   contactRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   contactText: { color: "#fff", fontSize: 16, flex: 1 },
+  tooltipOverlay: { flex: 1 },
+  tooltip: {
+    position: "absolute",
+    backgroundColor: "#333",
+    borderColor: "#ddd",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  tooltipText: { color: "#fff", fontSize: 15, fontWeight: "600", textAlign: "center" },
 });

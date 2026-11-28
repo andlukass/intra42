@@ -18,7 +18,9 @@ export default function IosTabs() {
               renderingMode="original"
             />
           ) : (
-            <NativeTabs.Trigger.Icon sf={{ default: "house", selected: "house.fill" }} />
+            <NativeTabs.Trigger.Icon
+              sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }}
+            />
           )}
           <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
@@ -36,6 +38,10 @@ export default function IosTabs() {
         <NativeTabs.Trigger name="clusters" disableAutomaticContentInsets>
           <NativeTabs.Trigger.Icon sf="map" />
           <NativeTabs.Trigger.Label>Clusters</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="search" role="search" disableAutomaticContentInsets>
+          <NativeTabs.Trigger.Icon sf="magnifyingglass" />
+          <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     </>

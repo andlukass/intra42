@@ -1,6 +1,10 @@
 # Intra42
 
-Intra42 contains an Expo [mobile app](apps/mobile/README.md) using the official 42 OAuth API and a [web experiment](apps/web/README.md).
+Intra42 contains an Expo [mobile app](apps/mobile/README.md) using a server-backed 42 portal login and a [web experiment](apps/web/README.md).
+
+The [`unoficial-login-again` branch status](docs/unofficial-login-again-status.md)
+records the current workspace separation, simulator route audit, and local
+screenshot inventory.
 
 ## Run locally
 
@@ -24,7 +28,7 @@ the validated flow, local endpoints, session lifecycle, and current limits.
 | `npm run build:web`, `npm run build` | Type-check and build the web app |
 | `npm run ios`, `npm run android` | Build and run the native app |
 | `npm run dev:mobile` | Start Metro for the native development build |
-| `npm run oauth:mobile` | Start the mobile OAuth service |
+| `npm run login:mobile` (`oauth:mobile` alias) | Start the native portal sign-in and data service |
 | `npm run preview` | Serve the production build locally |
 | `npm run typecheck` | Check TypeScript across the workspace |
 | `npm run lint` | Check formatting and lint rules |

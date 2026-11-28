@@ -17,10 +17,14 @@ export function AchievementRow({
   achievement,
   earnedAt,
   locked = false,
+  displayName,
+  showStatus = false,
 }: {
   achievement: Achievement;
   earnedAt?: string;
   locked?: boolean;
+  displayName?: string;
+  showStatus?: boolean;
 }) {
   const icon = useAchievementIcon(achievement.image);
   const date = earnedAt ? Date.parse(earnedAt) : NaN;
@@ -29,9 +33,21 @@ export function AchievementRow({
   return (
     <View style={[s.row, locked && s.lockedRow]}>
       <View style={s.copy}>
-        <Text style={[s.name, locked && styles.muted]}>{achievement.name}</Text>
+        <Text style={[s.name, locked && styles.muted]}>{displayName ?? achievement.name}</Text>
         <Text style={styles.muted}>{achievement.description}</Text>
-        {Number.isFinite(date) ? <Text style={s.date}>{dateFormat.format(date)}</Text> : null}
+        {showStatus && !locked ? (
+          <View style={s.achieved}>
+            <View style={s.check}>
+              <Text style={s.checkText}>✓</Text>
+            </View>
+            <View>
+              <Text style={s.date}>Achieved</Text>
+              {Number.isFinite(date) && <Text style={s.earnedDate}>{dateFormat.format(date)}</Text>}
+            </View>
+          </View>
+        ) : Number.isFinite(date) ? (
+          <Text style={s.date}>{dateFormat.format(date)}</Text>
+        ) : null}
       </View>
       <View style={[s.badge, locked && s.lockedBadge]} accessible={false}>
         {icon.data ? (
@@ -70,7 +86,7 @@ const s = StyleSheet.create({
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.border,
-    borderRadius: 8,
+    borderRadius: 2,
     overflow: "hidden",
   },
   copy: { flex: 1, justifyContent: "center", padding: 12, gap: 4, minHeight: 76 },
@@ -94,4 +110,15 @@ const s = StyleSheet.create({
     fontWeight: "600",
   },
   date: { color: theme.tealText, fontSize: 13 },
+  achieved: { flexDirection: "row", gap: 8, alignItems: "center", marginTop: 8 },
+  check: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: theme.tealText,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkText: { color: "#fff", fontSize: 19 },
+  earnedDate: { color: theme.slate, fontSize: 12 },
 });

@@ -1,6 +1,6 @@
 import { FlatList, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useProfile, useQuests } from "../src/api";
+import { useQuests } from "../src/api";
 import { useSession } from "../src/session";
 import { theme } from "../src/theme";
 import {
@@ -11,11 +11,12 @@ import {
   styles,
   useStackScrollInsets,
 } from "../src/ui";
+import { useProfileRoute } from "../src/useProfileRoute";
 
 export default function Quests() {
   const scrollInsets = useStackScrollInsets();
   const { token, loading } = useSession();
-  const profile = useProfile();
+  const profile = useProfileRoute();
   const quests = useQuests(token ? profile.data?.id : undefined);
   const error = profile.error ?? quests.error;
 
@@ -26,15 +27,10 @@ export default function Quests() {
         data={token ? quests.data : undefined}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={s.content}
-        ListHeaderComponent={
-          <Text accessibilityRole="header" style={styles.title}>
-            Quest list
-          </Text>
-        }
         ListEmptyComponent={
           <>
             <QueryMessage
-              pending={loading || (!!token && quests.isPending)}
+              pending={loading || (!!token && !error && (profile.isPending || quests.isPending))}
               error={error}
               empty={token ? "No quests to show." : "Sign in to view quests."}
             />
