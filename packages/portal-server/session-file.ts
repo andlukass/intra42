@@ -55,7 +55,7 @@ export function createFileSessionPersistence(sessionFile = defaultSessionFile): 
           Array.isArray(saved.collections)
         )
           throw new Error("Invalid session file. Move it aside to start a new session store.");
-        for (const name of ["native", "refresh", "calendar"] as const) {
+        for (const name of ["native", "refresh", "calendar", "transactions"] as const) {
           const records = (saved.collections as Record<string, unknown>)[name];
           if (records === undefined) continue;
           if (!Array.isArray(records))

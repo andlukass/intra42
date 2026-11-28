@@ -23,7 +23,11 @@ function fixture() {
   const control = {};
   const api = {};
   runInNewContext(`${source}\napi.createBrowserLogin = createBrowserLogin;`, {
+    readSessionRecords: () => [],
+    writeSessionRecords: async () => {},
+    process: { env: {} },
     api,
+    onSessionReload: (callback) => callback(),
     createHash,
     randomBytes,
     URL,

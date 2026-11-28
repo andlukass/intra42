@@ -21,7 +21,8 @@ type Session = {
   loading: boolean;
 };
 const context = createContext<Session | null>(null);
-const storageKey = "intra42.portal.v1";
+export const review = __DEV__ && process.env.EXPO_PUBLIC_INTRA42_REVIEW === "1";
+const storageKey = review ? "intra42.review.v1" : "intra42.portal.v1";
 function serviceOrigin(value: string | undefined) {
   if (!value) return;
   try {

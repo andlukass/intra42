@@ -1,4 +1,4 @@
-export type SessionCollection = "native" | "refresh" | "calendar";
+export type SessionCollection = "native" | "refresh" | "calendar" | "transactions";
 export type SessionSnapshot = Partial<Record<SessionCollection, unknown[]>>;
 
 export interface SessionPersistence {
@@ -12,6 +12,10 @@ export async function createSessionStore(persistence: SessionPersistence) {
   let pending = Promise.resolve();
   return {
     description: persistence.description,
+    async reload() {
+      await pending.catch(() => {});
+      snapshot = await persistence.load();
+    },
     read(name: SessionCollection): readonly unknown[] {
       return snapshot[name] ?? [];
     },

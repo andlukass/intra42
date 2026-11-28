@@ -44,3 +44,20 @@ test("failed writes preserve the committed snapshot and allow the next write to 
   await store.write("native", []);
   assert.deepEqual(store.read("native"), []);
 });
+
+test("reload replaces cached credentials and consumed transactions with persisted state", async () => {
+  let persisted = { native: [{ key: "old" }], transactions: [{ id: "consumed" }] };
+  const store = await createSessionStore({
+    description: "shared provider",
+    load: async () => structuredClone(persisted),
+    save: async (snapshot) => {
+      persisted = structuredClone(snapshot);
+    },
+  });
+  persisted = { native: [{ key: "renewed" }], transactions: [] };
+  await store.reload();
+  assert.deepEqual(store.read("native"), [{ key: "renewed" }]);
+  assert.deepEqual(store.read("transactions"), []);
+  await store.write("calendar", [{ key: "cookies" }]);
+  assert.deepEqual(persisted.native, [{ key: "renewed" }]);
+});

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useSession } from "./session";
+import { review, useSession } from "./session";
 import { Button, styles } from "./ui";
 
 export function SignIn() {
@@ -27,7 +27,7 @@ export function SignIn() {
     <SafeAreaView style={[styles.screen, signInStyles.screen]}>
       <View style={signInStyles.content}>
         <Button
-          title={busy ? "Signing in…" : "Sign in with 42"}
+          title={busy ? "Signing in…" : review ? "Sign in" : "Sign in with 42"}
           disabled={busy}
           onPress={() => void submit()}
         />

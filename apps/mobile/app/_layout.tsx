@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
-import { SessionProvider } from "../src/session";
+import { Platform } from "react-native";
+import { ScreenshotReady } from "../src/ScreenshotReady";
+import { demo, SessionProvider } from "../src/session";
 
 const client = new QueryClient();
 export default function Root() {
@@ -50,6 +52,11 @@ export default function Root() {
               headerShown: true,
               title: "Holy Graph",
               headerBackButtonDisplayMode: "minimal",
+              headerTransparent: true,
+              headerBlurEffect: Platform.OS === "ios" ? "systemUltraThinMaterial" : undefined,
+              headerStyle:
+                Platform.OS === "android" ? { backgroundColor: "transparent" } : undefined,
+              headerShadowVisible: false,
             }}
           />
           <Stack.Screen
@@ -81,6 +88,9 @@ export default function Root() {
             options={{ headerShown: true, title: "", headerBackButtonDisplayMode: "minimal" }}
           />
         </Stack>
+        {demo && Platform.OS === "ios" && process.env.EXPO_PUBLIC_INTRA42_SCREENSHOTS === "1" && (
+          <ScreenshotReady />
+        )}
       </SessionProvider>
     </QueryClientProvider>
   );

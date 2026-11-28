@@ -1,5 +1,6 @@
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { theme } from "../theme";
+import { SkeletonBlock } from "../ui";
 import { type AlumniCountdown, alumnizationInfo } from "./alumnization-info";
 import type { ProfilePalette } from "./coalition";
 
@@ -7,11 +8,29 @@ export function Alumnization({
   countdown,
   alumnizedAt,
   palette,
+  pending = false,
 }: {
   countdown?: AlumniCountdown | null;
   alumnizedAt?: string | null;
   palette: ProfilePalette;
+  pending?: boolean;
 }) {
+  if (pending)
+    return (
+      <View
+        style={s.panel}
+        accessible
+        accessibilityLabel="Loading alumnization"
+        accessibilityState={{ busy: true }}
+      >
+        <SkeletonBlock color={palette.skeleton} width="45%" height={25} />
+        <SkeletonBlock color={palette.skeleton} width="58%" height={40} />
+        <SkeletonBlock color={palette.skeleton} width="78%" height={18} />
+        <View style={s.buttonSkeleton}>
+          <SkeletonBlock color={palette.skeleton} height={48} radius={12} />
+        </View>
+      </View>
+    );
   const info = alumnizationInfo(countdown, alumnizedAt);
   if (!info) return null;
   return (
@@ -60,4 +79,5 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600", textAlign: "center" },
+  buttonSkeleton: { alignSelf: "stretch", marginTop: 12 },
 });

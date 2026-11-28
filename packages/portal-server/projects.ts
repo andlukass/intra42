@@ -1,5 +1,38 @@
 import { load } from "cheerio";
 
+import { buildProjectGraph, graphVariants } from "./project-graph-layout.ts";
+
+function graphVariant(page: string) {
+  const variant = load(page)("canvas.graph-canvas").attr("data-quest");
+  if (variant === "42next" || variant === "default") return variant;
+}
+
+export function parseProjectGraphStates(data: unknown, graphPage = "") {
+  if (!Array.isArray(data)) throw new Error("42 returned invalid project graph data.");
+  const nodes = data.flatMap((node) =>
+    Number.isSafeInteger(node?.project_id) && node.project_id > 0 && typeof node.state === "string"
+      ? [{ id: node.project_id as number, state: node.state as string, slug: node.slug as unknown }]
+      : [],
+  );
+  const nextTrack = graphVariant(graphPage) === "42next";
+  const bySlug = new Map(nodes.map((node) => [node.slug, node]));
+  for (const [classicSlug, nextSlug] of graphVariants) {
+    const classic = bySlug.get(classicSlug);
+    const next = bySlug.get(nextSlug);
+    if (!classic || !next) continue;
+
+    const current = nextTrack ? next.state : classic.state;
+    const alternate = nextTrack ? classic.state : next.state;
+    // The bundled graph keeps the classic node ID. The portal can display progress from either version.
+    classic.state =
+      (current === "available" || current === "unavailable") &&
+      (alternate === "done" || alternate === "fail")
+        ? alternate
+        : current;
+  }
+  return nodes.map(({ id, state }) => ({ id, state }));
+}
+
 export function parseProjectList(html: string, page: number) {
   const $ = load(html);
   if (!$("#projects-list-container, .projects-list-container").length)
@@ -52,4 +85,11 @@ export function parseProjectList(html: string, page: number) {
       );
     });
   return { items, hasMore };
+}
+
+export function parseProjectGraph(data: unknown, cursus = "9", page = "") {
+  const variant = graphVariant(page);
+  if (cursus === "21" && !variant)
+    throw new Error("42 did not identify the project graph variant.");
+  return buildProjectGraph(data, cursus, variant ?? "default");
 }

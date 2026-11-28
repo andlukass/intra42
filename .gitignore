@@ -5,7 +5,19 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+/output/
 
 apps/mobile/.expo/
 apps/mobile/ios/
 apps/mobile/android/
+
+firebase-debug.log*
+
+firestore-debug.log*
+
+# Private local Firebase credentials and emulator data
+apps/functions/.secret.local
+apps/functions/.env*
+.firebase/
+*-debug.log
+!apps/mobile/.env.review.example

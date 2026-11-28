@@ -1,21 +1,29 @@
 import { useRef, useState } from "react";
-import { PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  PanResponder,
+  Pressable,
+  ScrollView,
+  type ScrollViewProps,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import type { Slot } from "../api";
 import { SkeletonBlock } from "../ui";
 import { calendarDate, calendarTimeZone } from "./calendarTime";
 
 const rowHeight = 30;
-const timelineHeight = 400;
+export const slotTimelineHeight = 500;
 
-export function DayScheduleSkeleton() {
+export function DayScheduleSkeleton({ height = slotTimelineHeight }: { height?: number } = {}) {
   return (
     <View
       accessibilityLabel="Loading slot calendar"
       accessibilityState={{ busy: true }}
       style={schedule.card}
     >
-      <View style={[schedule.timeline, { overflow: "hidden" }]}>
-        {times.slice(0, Math.ceil(timelineHeight / rowHeight)).map((time, index) => (
+      <View style={{ height, overflow: "hidden" }}>
+        {times.slice(0, Math.ceil(height / rowHeight)).map((time, index) => (
           <View
             key={time}
             style={[
@@ -100,6 +108,8 @@ export function DaySchedule({
   onInvalidTime,
   onSelectionChange,
   onCancel,
+  height = slotTimelineHeight,
+  refreshControl,
   saving = false,
 }: {
   day: Date;
@@ -109,6 +119,8 @@ export function DaySchedule({
   onInvalidTime: () => void;
   onSelectionChange: (selecting: boolean) => void;
   onCancel: (slot: Slot) => void;
+  height?: number;
+  refreshControl?: ScrollViewProps["refreshControl"];
   saving?: boolean;
 }) {
   const scroll = useRef<ScrollView>(null);
@@ -198,7 +210,8 @@ export function DaySchedule({
         ref={scroll}
         nestedScrollEnabled
         scrollEnabled={!selection}
-        style={schedule.timeline}
+        style={{ height }}
+        refreshControl={refreshControl}
         onContentSizeChange={() => {
           if (positioned.current) return;
           positioned.current = true;
@@ -359,7 +372,6 @@ const schedule = StyleSheet.create({
     paddingVertical: 3,
   },
   selectionLabel: { color: "#00656a", fontSize: 12, fontWeight: "700" },
-  timeline: { height: timelineHeight },
   row: { height: rowHeight },
   time: { color: "#00a8ab", fontSize: 15, fontVariant: ["tabular-nums"] },
   timeColumn: {

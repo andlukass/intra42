@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { json } from "@intra42/portal-server/http";
 import { createLoginHandler, type PortalLogin } from "@intra42/portal-server/login";
 import { forget, refreshSession } from "@intra42/portal-server/refresh";
+import { onSessionReload } from "@intra42/portal-server/session-runtime";
 import { readSessionRecords, writeSessionRecords } from "@intra42/portal-server/session-store";
 import {
   finishPortalProject,
@@ -10,6 +11,7 @@ import {
   readPortalAttachment,
   readPortalClusterMaps,
   readPortalProjectDetails,
+  readPortalProjectGraphStates,
   readPortalProjectList,
   readPortalProjectStudents,
   revokeSlotSession,
@@ -27,24 +29,27 @@ type Session = PortalLogin & {
   savingProject?: boolean;
 };
 const sessions = new Map<string, Session>();
-for (const record of readSessionRecords("native")) {
-  const entry = record as Session & { key: string };
-  if (
-    !entry ||
-    !/^portal_[a-f0-9]{64}$/.test(entry.key) ||
-    typeof entry.access_token !== "string" ||
-    !entry.access_token ||
-    !Number.isSafeInteger(entry.userId) ||
-    entry.userId <= 0 ||
-    !Number.isFinite(entry.expiresAt) ||
-    !Number.isFinite(entry.deadline) ||
-    entry.deadline <= Date.now() ||
-    !Number.isFinite(entry.expires_in) ||
-    (entry.refresh_session !== undefined && typeof entry.refresh_session !== "string")
-  )
-    continue;
-  sessions.set(entry.key, entry);
-}
+onSessionReload(() => {
+  sessions.clear();
+  for (const record of readSessionRecords("native")) {
+    const entry = record as Session & { key: string };
+    if (
+      !entry ||
+      !/^portal_[a-f0-9]{64}$/.test(entry.key) ||
+      typeof entry.access_token !== "string" ||
+      !entry.access_token ||
+      !Number.isSafeInteger(entry.userId) ||
+      entry.userId <= 0 ||
+      !Number.isFinite(entry.expiresAt) ||
+      !Number.isFinite(entry.deadline) ||
+      entry.deadline <= Date.now() ||
+      !Number.isFinite(entry.expires_in) ||
+      (entry.refresh_session !== undefined && typeof entry.refresh_session !== "string")
+    )
+      continue;
+    sessions.set(entry.key, entry);
+  }
+});
 function persist() {
   return writeSessionRecords(
     "native",
@@ -64,7 +69,8 @@ function nativeRequest(req: IncomingMessage) {
   return (
     !req.headers.origin &&
     !req.headers["sec-fetch-site"] &&
-    ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "")
+    (process.env.INTRA42_FUNCTIONS === "1" ||
+      ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? ""))
   );
 }
 async function remove(key: string) {
@@ -81,7 +87,8 @@ function keyFor(req: IncomingMessage) {
 function find(key: string) {
   const session = sessions.get(key);
   if (session && session.deadline <= Date.now()) {
-    void remove(key).catch(() => console.error("Could not persist native-session expiry."));
+    if (process.env.INTRA42_FUNCTIONS !== "1")
+      void remove(key).catch(() => console.error("Could not persist native-session expiry."));
     return undefined;
   }
   return session;
@@ -497,6 +504,36 @@ export async function handlePortal(
       json(res, 502, {
         error: error instanceof Error ? error.message : "42 Meta could not load campus maps.",
       });
+    }
+    return true;
+  }
+  if (req.method === "GET" && url.pathname === "/api/holy-graph") {
+    const login = url.searchParams.get("login") ?? "";
+    const campus = url.searchParams.get("campus") ?? "";
+    const cursus = url.searchParams.get("cursus_id") ?? "21";
+    const layout = url.searchParams.get("layout") === "1";
+    if (!["21", "9"].includes(cursus)) {
+      json(res, 400, { error: "Invalid graph cursus." });
+      return true;
+    }
+    if (!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(login) || !/^[1-9]\d{0,8}$/.test(campus)) {
+      json(res, 400, { error: "Invalid project graph profile or campus." });
+      return true;
+    }
+    try {
+      json(
+        res,
+        200,
+        await readPortalProjectGraphStates(
+          session.refresh_session ?? session.access_token,
+          login,
+          campus,
+          cursus,
+          layout,
+        ),
+      );
+    } catch {
+      json(res, 502, { error: "42 could not load your project states." });
     }
     return true;
   }

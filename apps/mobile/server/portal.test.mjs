@@ -54,7 +54,9 @@ function service({ renewable = true, identity = 42 } = {}) {
   };
   const api = {};
   runInNewContext(`${source}\nObject.assign(api, { handlePortal, portalIdentity });`, {
+    process: { env: {} },
     api,
+    onSessionReload: (callback) => callback(),
     readSessionRecords: () => [],
     writeSessionRecords() {},
     randomBytes,
@@ -124,6 +126,11 @@ function service({ renewable = true, identity = 42 } = {}) {
         items: [{ id: "libft", slug: "libft", name: "Libft", recommendation: "Forbidden" }],
         hasMore: false,
       };
+    },
+    async readPortalProjectGraphStates(key, login, campus, cursus, layout) {
+      if (layout) calls.push({ graphCourse: cursus, graphLayout: layout });
+      calls.push({ graph: { key, login, campus } });
+      return [{ id: 1314, state: "done" }];
     },
     async managePortalSlots(req, res, allowed, calendar) {
       assert.ok(allowed(req));
@@ -911,6 +918,25 @@ test("pending evaluations use the official portal feed and reject malformed or u
   }
 });
 
+test("Holy Graph reads project states through the authenticated portal session", async () => {
+  const s = service();
+  const { accessToken: key } = await s.login();
+  const path = "/api/holy-graph?login=student-a&campus=38";
+  assert.equal((await s.request(path)).status, 401);
+  assert.equal(
+    (await s.request("/api/holy-graph?login=student-a&campus=invalid", { key })).status,
+    400,
+  );
+  const result = await s.request(path, { key });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body, [{ id: 1314, state: "done" }]);
+  assert.deepEqual(s.calls.at(-1).graph, {
+    key: "private-refresh-key",
+    login: "student-a",
+    campus: "38",
+  });
+});
+
 test("project catalog uses the signed-in portal session and validates official filters", async () => {
   const s = service();
   const { accessToken: key } = await s.login();
@@ -1116,5 +1142,27 @@ test("finishing a project requires the saved session and preserves the requested
   assert.notEqual(
     (await broker.request(`${path}?team=456`, { method: "POST", key: token.accessToken })).status,
     200,
+  );
+});
+
+test("graph cursus selection forwards the requested official layout and rejects invalid courses", async () => {
+  const s = service();
+  const token = await s.login();
+  assert.equal(
+    (
+      await s.request("/api/holy-graph?login=student-a&campus=38&cursus_id=9&layout=1", {
+        key: token.accessToken,
+      })
+    ).status,
+    200,
+  );
+  assert.ok(s.calls.some((call) => call.graphCourse === "9" && call.graphLayout));
+  assert.equal(
+    (
+      await s.request("/api/holy-graph?login=student-a&campus=38&cursus_id=invalid&layout=1", {
+        key: token.accessToken,
+      })
+    ).status,
+    400,
   );
 });

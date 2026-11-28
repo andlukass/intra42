@@ -42,9 +42,9 @@ const project = { kind: "project", id: 1, name: "Libft", slug: "42cursus-libft" 
 const plain = (value) => JSON.parse(JSON.stringify(value));
 test("opened profiles and projects survive a new store instance using phone documents only", () => {
   const first = fixture();
-  assert.equal(first.saveRecentSearches([student, project]), true);
-  assert.deepEqual(plain(fixture(first.disk).readRecentSearches()), [student, project]);
-  assert.deepEqual([...first.disk.keys()], ["phone-documents/recent-searches.json"]);
+  assert.equal(first.saveRecentSearches(42, [student, project]), true);
+  assert.deepEqual(plain(fixture(first.disk).readRecentSearches(42)), [student, project]);
+  assert.deepEqual([...first.disk.keys()], ["phone-documents/recent-searches-42.json"]);
 });
 test("reopening a result moves it to the front without duplicates, retaining only twenty entries", () => {
   const store = fixture();
@@ -57,21 +57,21 @@ test("reopening a result moves it to the front without duplicates, retaining onl
 });
 test("removing one result and removing the last result remain removed after restart", () => {
   const store = fixture();
-  store.saveRecentSearches([student, project]);
+  store.saveRecentSearches(42, [student, project]);
   const next = store
-    .readRecentSearches()
+    .readRecentSearches(42)
     .filter((item) => store.recentSearchKey(item) !== store.recentSearchKey(student));
-  store.saveRecentSearches(next);
-  assert.deepEqual(plain(fixture(store.disk).readRecentSearches()), [project]);
-  store.saveRecentSearches([]);
-  assert.deepEqual(plain(fixture(store.disk).readRecentSearches()), []);
+  store.saveRecentSearches(42, next);
+  assert.deepEqual(plain(fixture(store.disk).readRecentSearches(42)), [project]);
+  store.saveRecentSearches(42, []);
+  assert.deepEqual(plain(fixture(store.disk).readRecentSearches(42)), []);
 });
 test("bad files and invalid destinations do not break Search", () => {
   const store = fixture();
-  store.disk.set("phone-documents/recent-searches.json", "invalid json");
-  assert.deepEqual(plain(store.readRecentSearches()), []);
+  store.disk.set("phone-documents/recent-searches-42.json", "invalid json");
+  assert.deepEqual(plain(store.readRecentSearches(42)), []);
   store.disk.set(
-    "phone-documents/recent-searches.json",
+    "phone-documents/recent-searches-42.json",
     JSON.stringify([
       null,
       {},
@@ -81,6 +81,21 @@ test("bad files and invalid destinations do not break Search", () => {
       project,
     ]),
   );
-  assert.deepEqual(plain(store.readRecentSearches()), [project]);
-  assert.equal(fixture(store.disk, true).saveRecentSearches([student]), false);
+  assert.deepEqual(plain(store.readRecentSearches(42)), [project]);
+  assert.equal(fixture(store.disk, true).saveRecentSearches(42, [student]), false);
+});
+
+test("history stays isolated between accounts and ignores legacy unowned history", () => {
+  const store = fixture();
+  store.disk.set("phone-documents/recent-searches.json", JSON.stringify([student]));
+  assert.deepEqual(plain(store.readRecentSearches(42)), []);
+  store.saveRecentSearches(42, [student]);
+  assert.deepEqual(plain(store.readRecentSearches(99)), []);
+  store.saveRecentSearches(99, [project]);
+  assert.deepEqual(plain(fixture(store.disk).readRecentSearches(42)), [student]);
+  assert.deepEqual(plain(fixture(store.disk).readRecentSearches(99)), [project]);
+  store.saveRecentSearches(99, []);
+  assert.deepEqual(plain(store.readRecentSearches(42)), [student]);
+  assert.equal(store.saveRecentSearches(-1, [project]), false);
+  assert.deepEqual(plain(store.readRecentSearches(undefined)), []);
 });

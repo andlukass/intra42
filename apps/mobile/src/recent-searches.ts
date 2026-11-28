@@ -6,7 +6,10 @@ export type RecentSearch =
   | ({ kind: "project" } & SearchResults["projects"][number]);
 
 const limit = 20;
-const historyFile = () => new File(Paths.document, "recent-searches.json");
+const historyFile = (accountId: number) => {
+  if (!Number.isSafeInteger(accountId) || accountId <= 0) throw new Error("Invalid account ID");
+  return new File(Paths.document, `recent-searches-${accountId}.json`);
+};
 export const recentSearchKey = (item: RecentSearch) =>
   item.kind === "user" ? `user:${item.login}` : `project:${item.id}`;
 
@@ -39,9 +42,9 @@ export function rememberSearch(history: RecentSearch[], item: RecentSearch) {
   ].slice(0, limit);
 }
 
-export function readRecentSearches(): RecentSearch[] {
+export function readRecentSearches(accountId: number): RecentSearch[] {
   try {
-    const file = historyFile();
+    const file = historyFile(accountId);
     if (!file.exists) return [];
     const data: unknown = JSON.parse(file.textSync());
     if (!Array.isArray(data)) return [];
@@ -60,9 +63,9 @@ export function readRecentSearches(): RecentSearch[] {
   }
 }
 
-export function saveRecentSearches(history: RecentSearch[]) {
+export function saveRecentSearches(accountId: number, history: RecentSearch[]) {
   try {
-    historyFile().write(JSON.stringify(history.slice(0, limit)));
+    historyFile(accountId).write(JSON.stringify(history.slice(0, limit)));
     return true;
   } catch {
     return false;

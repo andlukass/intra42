@@ -5,6 +5,8 @@ import { createDevTerminal } from "./dev-terminal.mjs";
 
 const require = createRequire(import.meta.url);
 const all = process.argv.includes("--all");
+const review = process.env.EXPO_PUBLIC_INTRA42_REVIEW === "1";
+const serviceName = review ? "intra42-review" : "intra42-sign-in";
 const metroArgs = process.argv.slice(2).filter((arg) => arg !== "--all");
 const portIndex = metroArgs.indexOf("--port");
 const metroPort = portIndex >= 0 ? metroArgs[portIndex + 1] : "8081";
@@ -12,7 +14,8 @@ const detached = all && process.platform !== "win32";
 const children = [];
 let stopping = false;
 
-const backendOrigin = `http://127.0.0.1:${process.env.PORT || "8787"}`;
+const backendOrigin = `http://127.0.0.1:${all && !review ? "8787" : process.env.PORT || "8787"}`;
+if (all) process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL = backendOrigin;
 const terminal = all
   ? createDevTerminal(
       `Intra42 local development
@@ -30,6 +33,7 @@ function launch(args, env = process.env, name) {
     env,
     detached,
   });
+  child.devService = name;
   if (terminal) terminal.watch(name, child);
   child.once("error", (error) => {
     process.exitCode = 1;
@@ -43,7 +47,7 @@ function launch(args, env = process.env, name) {
 async function healthy(origin) {
   try {
     const response = await fetch(`${origin}/health`, { signal: AbortSignal.timeout(1000) });
-    return response.ok && (await response.json()).service === "intra42-sign-in";
+    return response.ok && (await response.json()).service === serviceName;
   } catch {
     return false;
   }
@@ -55,7 +59,7 @@ function stop(signal = "SIGTERM") {
   for (const child of children) {
     if (!child.pid || child.exitCode !== null || child.signalCode !== null) continue;
     try {
-      if (detached) process.kill(-child.pid, signal);
+      if (detached && child.devService !== "Backend") process.kill(-child.pid, signal);
       else child.kill(signal);
     } catch (error) {
       if (error.code !== "ESRCH") throw error;
@@ -77,7 +81,12 @@ async function run() {
         );
       if (!ready) {
         const service = launch(
-          ["--experimental-strip-types", "server/oauth.mjs"],
+          all && !review
+            ? ["../../scripts/dev-functions.mjs"]
+            : [
+                "--experimental-strip-types",
+                review ? "server/review/server.ts" : "server/oauth.mjs",
+              ],
           {
             ...process.env,
             PORT: origin.port || "80",
@@ -86,7 +95,11 @@ async function run() {
         );
         for (let attempt = 0; !(await healthy(origin.origin)); attempt++) {
           if (stopping) return;
-          if (service.exitCode !== null || service.signalCode !== null || attempt >= 50)
+          if (
+            service.exitCode !== null ||
+            service.signalCode !== null ||
+            attempt >= (all && !review ? 1800 : review ? 200 : 50)
+          )
             throw new Error(`Could not start the sign-in service at ${origin.origin}.`);
           await delay(100);
         }

@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useState } from "react";
-import { type ColorValue, Image, Text, View } from "react-native";
+import { type ColorValue, Image, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { useProfileAvatar } from "../../src/api";
 import { teal } from "../../src/ui";
@@ -32,7 +32,20 @@ export default function AndroidTabs() {
         options={{
           title: "Slots",
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ color: color ?? undefined, fontSize: size }}>▦</Text>
+            <Svg
+              width={size}
+              height={size}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={color}
+              strokeWidth={1.8}
+            >
+              <Path
+                d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z M3 9h18 M8 2v4 M16 2v4 M7 13h.01 M12 13h.01 M17 13h.01 M7 17h.01 M12 17h.01 M17 17h.01"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           ),
         }}
       />
@@ -41,7 +54,20 @@ export default function AndroidTabs() {
         options={{
           title: "Clusters",
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ color: color ?? undefined, fontSize: size }}>▤</Text>
+            <Svg
+              width={size}
+              height={size}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={color}
+              strokeWidth={1.8}
+            >
+              <Path
+                d="m2 6 6-3 8 3 6-3v15l-6 3-8-3-6 3V6Z M8 3v15 M16 6v15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           ),
         }}
       />

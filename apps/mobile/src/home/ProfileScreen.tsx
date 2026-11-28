@@ -46,6 +46,19 @@ const projectActions = [
   { label: "Quests", href: "/quests" },
 ] as const;
 
+function AgendaSkeleton() {
+  return (
+    <View style={homeStyles.skeleton}>
+      {[1, 2, 3].map((id) => (
+        <EventCardSkeleton key={id} />
+      ))}
+      <View style={homeStyles.loadMore}>
+        <SkeletonBlock width={72} height={18} />
+      </View>
+    </View>
+  );
+}
+
 export function ProfileScreen({ userId }: { userId?: number | string }) {
   const ownHome = userId === undefined;
   const router = useRouter();
@@ -120,18 +133,7 @@ export function ProfileScreen({ userId }: { userId?: number | string }) {
     }
   }
 
-  const waitingForContent =
-    !!token &&
-    (profile.isPending ||
-      (!!user &&
-        (avatar.loading ||
-          (!user.alumnized_at && alumnization.isPending) ||
-          (course?.cursus.id === 21 && (pace.isPending || attendance.isPending)) ||
-          coalitions.loading ||
-          locations.isPending ||
-          (ownHome && !!campus && events.isPending))));
-
-  if (loading || waitingForContent)
+  if (loading || (!!token && !user && profile.isPending))
     return (
       <Screen scrollUnderStatusBar={ownHome} underHeader={!ownHome}>
         <View
@@ -145,14 +147,7 @@ export function ProfileScreen({ userId }: { userId?: number | string }) {
           {ownHome && (
             <View style={styles.card}>
               <SkeletonBlock width="24%" height={19} />
-              {(agenda?.map((event) => event.id) ?? [1, 2, 3]).map((id) => (
-                <EventCardSkeleton key={id} />
-              ))}
-              {(events.hasNextPage || events.isPending) && (
-                <View style={homeStyles.loadMore}>
-                  <SkeletonBlock width={72} height={18} />
-                </View>
-              )}
+              <AgendaSkeleton />
             </View>
           )}
           <View style={styles.card}>
@@ -211,6 +206,7 @@ export function ProfileScreen({ userId }: { userId?: number | string }) {
         key={user.id}
         user={user}
         avatar={avatar.image}
+        avatarPending={avatar.loading}
         campus={campus?.name}
         course={course}
         palette={palette}
@@ -232,6 +228,7 @@ export function ProfileScreen({ userId }: { userId?: number | string }) {
           key={`alumnization-${user.id}`}
           countdown={alumnization.data}
           alumnizedAt={user.alumnized_at}
+          pending={!user.alumnized_at && alumnization.isPending}
           palette={palette}
         />
         {course?.cursus.id === 21 && (
@@ -258,6 +255,7 @@ export function ProfileScreen({ userId }: { userId?: number | string }) {
               pending={!!campus && events.isPending}
               error={events.error}
               empty="No upcoming campus events."
+              skeleton={<AgendaSkeleton />}
             />
           )}
           {events.isFetchNextPageError && (
@@ -345,6 +343,7 @@ export function ProfileScreen({ userId }: { userId?: number | string }) {
             pending={!!user && locations.isPending}
             error={locations.error}
             empty="No recent sessions."
+            skeleton={<LogtimeSkeleton />}
           />
         )}
       </Card>

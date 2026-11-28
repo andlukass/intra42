@@ -1,15 +1,34 @@
 {
   "expo": {
-    "name": "Intra42",
+    "name": "42Go Intra",
     "slug": "intra42",
     "icon": "./assets/app-icon.png",
     "scheme": "intra42",
     "plugins": [
       "expo-router",
+      "expo-updates",
       "expo-secure-store",
-      ["expo-build-properties", { "ios": { "enableSceneSupport": true } }]
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ]
     ],
-    "ios": { "bundleIdentifier": "dev.intra42.mobile" },
-    "android": { "package": "dev.intra42.mobile" }
+    "ios": {
+      "bundleIdentifier": "com.42go.intra"
+    },
+    "android": {
+      "package": "dev.intra42.mobile"
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }

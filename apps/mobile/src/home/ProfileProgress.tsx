@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
 import type { useIntraQuery } from "../api";
+import { SkeletonBlock } from "../ui";
 import { CalendarTooltip } from "./CalendarTooltip";
 import {
   type AttendanceSummary,
@@ -12,6 +13,63 @@ import {
 } from "./profile-progress";
 
 const teal = "#00babc";
+const skeletonColor = "#ffffff35";
+
+function AttendanceSkeleton() {
+  return (
+    <View
+      style={s.attendanceSkeleton}
+      accessible
+      accessibilityLabel="Loading attendance"
+      accessibilityState={{ busy: true }}
+    >
+      {[55, 92, 72, 116].map((height) => (
+        <SkeletonBlock key={height} color={skeletonColor} width="16%" height={height} />
+      ))}
+    </View>
+  );
+}
+
+function ProgressSkeleton() {
+  return (
+    <View
+      style={s.container}
+      accessible
+      accessibilityLabel="Loading milestone progress"
+      accessibilityState={{ busy: true }}
+    >
+      <View style={s.panel}>
+        <View style={s.deadline}>
+          <SkeletonBlock color={skeletonColor} width="44%" height={19} />
+          <SkeletonBlock color={skeletonColor} width="29%" height={22} />
+        </View>
+        <View style={s.pace}>
+          <SkeletonBlock color={skeletonColor} width={65} height={18} />
+        </View>
+        <View style={s.charts}>
+          <View style={s.elapsed}>
+            <SkeletonBlock color={skeletonColor} width={98} height={18} />
+            <SkeletonBlock color={skeletonColor} width={124} height={124} radius={62} />
+          </View>
+          <View style={s.attendance}>
+            <AttendanceSkeleton />
+          </View>
+        </View>
+      </View>
+      <View style={s.timelinePanel}>
+        <View style={s.eta}>
+          <SkeletonBlock color={skeletonColor} width="42%" height={19} />
+          <SkeletonBlock color={skeletonColor} width="29%" height={22} />
+        </View>
+        <View style={s.timelineSkeleton}>
+          {[1, 2, 3].map((step) => (
+            <SkeletonBlock key={step} color={skeletonColor} width="30%" height={44} />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export function ProfileProgress({
   pace,
@@ -34,7 +92,8 @@ export function ProfileProgress({
     return () => clearInterval(timer);
   }, []);
   const progress = profileProgress(pace.data, now);
-  if (pace.isError)
+  if (pace.isPending) return <ProgressSkeleton />;
+  if (pace.isError && !pace.data)
     return (
       <Pressable
         accessibilityRole="button"
@@ -154,7 +213,7 @@ export function ProfileProgress({
                   })}
                 </Svg>
               ) : attendance.isPending ? (
-                <Text style={s.secondary}>Loading attendance…</Text>
+                <AttendanceSkeleton />
               ) : (
                 <Pressable accessibilityRole="button" onPress={() => void attendance.refetch()}>
                   <Text style={s.secondary}>Attendance unavailable. Tap to retry.</Text>
@@ -301,6 +360,13 @@ const s = StyleSheet.create({
   days: { color: teal, fontSize: 24, fontWeight: "800" },
   secondary: { color: "#ccd6d6", fontSize: 14, textAlign: "center" },
   attendance: { flex: 1 },
+  attendanceSkeleton: {
+    height: 170,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-around",
+    paddingBottom: 26,
+  },
   timelinePanel: { backgroundColor: "#171717", borderRadius: 10, overflow: "hidden" },
   eta: {
     padding: 14,
@@ -313,6 +379,13 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   timelineScroll: { padding: 12 },
+  timelineSkeleton: {
+    minHeight: 134,
+    padding: 12,
+    gap: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   month: { position: "absolute", top: 0, color: "#fff", fontSize: 12 },
   segment: {
     position: "absolute",

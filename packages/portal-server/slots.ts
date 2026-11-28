@@ -16,7 +16,8 @@ import {
   parseProjectStudentLinks,
   parseProjectStudents,
 } from "./project-students.ts";
-import { parseProjectList } from "./projects.ts";
+import { parseProjectGraph, parseProjectGraphStates, parseProjectList } from "./projects.ts";
+import { onSessionReload, setTimeout } from "./session-runtime.ts";
 import { readSessionRecords, writeSessionRecords } from "./session-store.ts";
 
 const portal = "https://profile.intra.42.fr";
@@ -50,7 +51,12 @@ async function releaseSlotSession(key: string, session: SlotSession) {
   void session.context.then((context) => context.dispose()).catch(() => {});
 }
 
-async function installSlotSession(key: string, expiresIn: number, cookies: Cookies) {
+async function installSlotSession(
+  key: string,
+  expiresIn: number,
+  cookies: Cookies,
+  restoring = false,
+) {
   const previous = sessions.get(key);
   if (previous) await releaseSlotSession(key, previous);
   const entry: SlotSession = {
@@ -66,7 +72,7 @@ async function installSlotSession(key: string, expiresIn: number, cookies: Cooki
     expires: setTimeout(() => expire(key, entry), expiresIn * 1000).unref(),
   };
   sessions.set(key, entry);
-  await persist();
+  if (!restoring) await persist();
   void entry.context.catch(() => expire(key, entry));
 }
 
@@ -80,18 +86,25 @@ function persist() {
     })),
   );
 }
-for (const record of readSessionRecords("calendar")) {
-  const entry = record as { key: string; cookies: Cookies; expiresAt: number };
-  if (
-    !entry ||
-    !/^[a-f0-9]{64}$/.test(entry.key) ||
-    !Array.isArray(entry.cookies) ||
-    !Number.isFinite(entry.expiresAt) ||
-    entry.expiresAt <= Date.now()
-  )
-    continue;
-  await installSlotSession(entry.key, (entry.expiresAt - Date.now()) / 1000, entry.cookies);
-}
+await onSessionReload(async () => {
+  for (const entry of sessions.values()) {
+    clearTimeout(entry.expires);
+    await (await entry.context).dispose();
+  }
+  sessions.clear();
+  for (const record of readSessionRecords("calendar")) {
+    const entry = record as { key: string; cookies: Cookies; expiresAt: number };
+    if (
+      !entry ||
+      !/^[a-f0-9]{64}$/.test(entry.key) ||
+      !Array.isArray(entry.cookies) ||
+      !Number.isFinite(entry.expiresAt) ||
+      entry.expiresAt <= Date.now()
+    )
+      continue;
+    await installSlotSession(entry.key, (entry.expiresAt - Date.now()) / 1000, entry.cookies, true);
+  }
+});
 export async function retainSlotSession(token: string, expiresIn: number, cookies: Cookies) {
   await installSlotSession(keyFor(token), expiresIn, cookies);
 }
@@ -328,6 +341,37 @@ export async function readPortalProjectList(token: string, params: URLSearchPara
   });
   if (!response.ok()) throw new Error("42 could not load your project list. Sign in again.");
   return parseProjectList(await response.text(), Number(params.get("page")) || 1);
+}
+
+export async function readPortalProjectGraphStates(
+  token: string,
+  login: string,
+  campus: string,
+  cursus = "21",
+  layout = false,
+) {
+  const session = sessions.get(keyFor(token));
+  if (!session) throw new Error("Sign in again to load your project states.");
+  const context = await session.context;
+  const params = new URLSearchParams({ cursus_id: cursus, campus_id: campus, login });
+  const [response, page] = await Promise.all([
+    context.get(`https://projects.intra.42.fr/project_data.json?${params}`, {
+      headers: { Accept: "application/json" },
+      maxRedirects: 0,
+      timeout: 10000,
+    }),
+    context
+      .get(`https://projects.intra.42.fr/projects/graph?${new URLSearchParams({ login })}`, {
+        headers: { Accept: "text/html", "X-Requested-With": "" },
+        maxRedirects: 0,
+        timeout: 10000,
+      })
+      .then((page) => (page.ok() ? page.text() : ""))
+      .catch(() => ""),
+  ]);
+  if (!response.ok()) throw new Error("42 could not load your project states.");
+  const data = await response.json();
+  return layout ? parseProjectGraph(data, cursus, page) : parseProjectGraphStates(data, page);
 }
 
 export async function readPortalClusterMaps(token: string, campusId: number) {

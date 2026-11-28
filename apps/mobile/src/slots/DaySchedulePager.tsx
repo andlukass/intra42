@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { ScrollView, type ScrollViewProps, View } from "react-native";
 import { type Slot, useIntraQuery } from "../api";
 import { QueryMessage } from "../ui";
 import { calendarDate } from "./calendarTime";
@@ -16,6 +16,8 @@ export function DaySchedulePager({
   onSelectionChange,
   onCancel,
   saving,
+  height,
+  refreshControl,
 }: {
   day: Date;
   slots: Slot[];
@@ -23,9 +25,11 @@ export function DaySchedulePager({
   onSelect: (start: Date, end: Date) => void;
   onDragSelect: (start: Date, end: Date) => void;
   onInvalidTime: () => void;
-  onSelectionChange: (selecting: boolean) => void;
+  onSelectionChange?: (selecting: boolean) => void;
   onCancel: (slot: Slot) => void;
   saving?: boolean;
+  height?: number;
+  refreshControl?: ScrollViewProps["refreshControl"];
 }) {
   const pager = useRef<ScrollView>(null);
   const changingDay = useRef(false);
@@ -38,13 +42,13 @@ export function DaySchedulePager({
     if (dayKey && width) pager.current?.scrollTo({ x: width, animated: false });
     changingDay.current = false;
     setSelecting(false);
-    onSelectionChange(false);
-    return () => onSelectionChange(false);
+    onSelectionChange?.(false);
+    return () => onSelectionChange?.(false);
   }, [dayKey, width, onSelectionChange]);
 
   function changeSelection(active: boolean) {
     setSelecting(active);
-    onSelectionChange(active);
+    onSelectionChange?.(active);
   }
 
   return (
@@ -93,13 +97,15 @@ export function DaySchedulePager({
                   onSelectionChange={changeSelection}
                   onCancel={onCancel}
                   saving={saving}
+                  height={height}
+                  refreshControl={offset === 0 ? refreshControl : undefined}
                 />
               </View>
             );
           })}
         </ScrollView>
       ) : (
-        <DayScheduleSkeleton />
+        <DayScheduleSkeleton height={height} />
       )}
     </View>
   );
@@ -118,7 +124,7 @@ function SchedulePage({
       pending={neighbor.isPending}
       error={neighbor.error}
       empty="Could not load the calendar."
-      skeleton={<DayScheduleSkeleton />}
+      skeleton={<DayScheduleSkeleton height={props.height} />}
     />
   );
 }

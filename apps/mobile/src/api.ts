@@ -184,7 +184,7 @@ const fixtures: Profile = {
     { title_id: 1, selected: true },
     { title_id: 2, selected: false },
   ],
-  campus: [{ id: 38, name: "Lisboa" }],
+  campus: [{ id: 38, name: "Lisboa", time_zone: "Europe/Lisbon" }],
   cursus_users: [
     { level: 7.42, grade: "Pisciner", cursus: { id: 9, name: "C Piscine" } },
     { level: 11.78, grade: "Transcender", cursus: { id: 21, name: "42cursus", slug: "42cursus" } },

@@ -2,6 +2,8 @@ import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { json } from "@intra42/portal-server/http";
 import { createLoginHandler, type PortalLogin } from "@intra42/portal-server/login";
+import { onSessionReload, setTimeout } from "@intra42/portal-server/session-runtime";
+import { readSessionRecords, writeSessionRecords } from "@intra42/portal-server/session-store";
 import type { Token } from "../src/session-token.js";
 import { signInAssets } from "./sign-in-assets.ts";
 import { signInPage, signInScript } from "./sign-in-page.ts";
@@ -24,10 +26,18 @@ function browserRequest(req: IncomingMessage) {
     return (
       req.method === "POST" &&
       origin.origin === req.headers.origin &&
-      origin.host === req.headers.host &&
+      (origin.host === req.headers.host ||
+        (process.env.INTRA42_FUNCTIONS === "1" &&
+          [
+            process.env.INTRA42_PUBLIC_ORIGIN ?? "https://api-intra.web.app",
+            ...(process.env.FUNCTIONS_EMULATOR === "true"
+              ? ["http://127.0.0.1:8787", "http://localhost:8787"]
+              : []),
+          ].includes(origin.origin))) &&
       (origin.protocol === "https:" ||
         (origin.protocol === "http:" && ["localhost", "127.0.0.1"].includes(origin.hostname))) &&
-      ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "")
+      (process.env.INTRA42_FUNCTIONS === "1" ||
+        ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? ""))
     );
   } catch {
     return false;
@@ -54,13 +64,36 @@ export function createBrowserLogin(
   nativeRequest: (req: IncomingMessage) => boolean,
   createSession: (token: PortalLogin, signal: AbortSignal) => Promise<Token>,
   discardSession: (key: string) => Promise<void>,
+  authenticate?: (body: URLSearchParams) => Promise<Token | null>,
 ) {
   const transactions = new Map<string, Transaction>();
+  if (!authenticate) {
+    onSessionReload(() => {
+      for (const entry of transactions.values()) clearTimeout(entry.timer);
+      transactions.clear();
+      for (const record of readSessionRecords("transactions")) {
+        const entry = record as Transaction & { id: string };
+        if (entry.expiresAt > Date.now())
+          transactions.set(entry.id, {
+            ...entry,
+            timer: setTimeout(() => expire(entry.id), entry.expiresAt - Date.now()).unref(),
+          });
+      }
+    });
+  }
+  function persist() {
+    if (authenticate) return;
+    return writeSessionRecords(
+      "transactions",
+      [...transactions].map(([id, { timer: _timer, ...entry }]) => ({ id, ...entry })),
+    );
+  }
   async function forget(id: string) {
     const entry = transactions.get(id);
     if (!entry) return;
     clearTimeout(entry.timer);
     transactions.delete(id);
+    await persist();
     if (entry.session) await discardSession(entry.session.accessToken);
   }
   function expire(id: string) {
@@ -69,7 +102,8 @@ export function createBrowserLogin(
   function find(id: string) {
     const entry = transactions.get(id);
     if (entry && entry.expiresAt <= Date.now()) {
-      void forget(id).catch(() => console.error("Could not release an expired sign-in session."));
+      if (process.env.INTRA42_FUNCTIONS !== "1")
+        void forget(id).catch(() => console.error("Could not release an expired sign-in session."));
       return;
     }
     return entry;
@@ -79,9 +113,7 @@ export function createBrowserLogin(
     const id = url.searchParams.get("transaction") ?? "";
     return { id, entry: find(id) };
   }
-  const login = createLoginHandler(browserRequest, async (token, signal) => {
-    const transaction = activeLogin;
-    const session = await createSession(token, signal);
+  async function complete(session: Token, transaction: typeof activeLogin) {
     if (!transaction || find(transaction.id) !== transaction.entry) {
       await discardSession(session.accessToken);
       throw new Error("Sign-in cancelled.");
@@ -92,11 +124,16 @@ export function createBrowserLogin(
     entry.expiresAt = Date.now() + 60_000;
     clearTimeout(entry.timer);
     entry.timer = setTimeout(() => expire(transaction.id), 60_000).unref();
+    await persist();
     return {
       redirect: `intra42://oauth?${new URLSearchParams({ state: entry.state, code: entry.code })}`,
     };
-  });
+  }
   let activeLogin: { id: string; entry: Transaction } | undefined;
+  const login = createLoginHandler(browserRequest, async (token, signal) => {
+    const transaction = activeLogin;
+    return complete(await createSession(token, signal), transaction);
+  });
 
   return async function handleBrowserLogin(req: IncomingMessage, res: ServerResponse, url: URL) {
     if (req.method === "GET" && Object.hasOwn(signInAssets, url.pathname)) {
@@ -153,7 +190,15 @@ export function createBrowserLogin(
       }
       activeLogin = { id, entry };
       try {
-        await login(req, res);
+        if (authenticate) {
+          const body = await formBody(req, res);
+          if (!body) return true;
+          const session = await authenticate(body);
+          if (session) json(res, 200, await complete(session, activeLogin));
+          else json(res, 401, { error: "Invalid login or password." });
+        } else {
+          await login(req, res);
+        }
       } finally {
         activeLogin = undefined;
       }
@@ -189,6 +234,7 @@ export function createBrowserLogin(
         expiresAt: Date.now() + 600_000,
         timer: setTimeout(() => expire(id), 600_000).unref(),
       });
+      await persist();
       json(res, 200, { path: `/sign-in?transaction=${id}` });
       return true;
     }

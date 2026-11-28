@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useProfile } from "../../src/api";
-import { useSession } from "../../src/session";
+import { type ProjectListItem, useIntraQuery, useProfile } from "../../src/api";
+import { review, useSession } from "../../src/session";
 import { theme } from "../../src/theme";
 import { QueryMessage, Screen, SkeletonBlock, styles } from "../../src/ui";
 
@@ -70,6 +70,9 @@ export default function Projects() {
   const router = useRouter();
   const { token } = useSession();
   const profile = useProfile();
+  const reviewProjects = useIntraQuery<{ items: ProjectListItem[] }>(
+    review ? "/me/project-list?recommended=true" : undefined,
+  );
   const teams = profile.data?.projects_users?.filter(
     ({ status, marked }) => !marked && openStatuses.has(status),
   );
@@ -151,11 +154,22 @@ export default function Projects() {
           <Text accessibilityRole="header" style={s.heading}>
             Recommended projects
           </Text>
-          <View style={s.recommendations}>
-            {recommendations.map(({ name, slug }) => (
-              <ProjectRow key={slug} name={name} onPress={() => showProject(slug)} />
-            ))}
-          </View>
+          {review && !reviewProjects.data?.items.length ? (
+            <QueryMessage
+              pending={reviewProjects.isPending}
+              error={reviewProjects.error}
+              empty="No recommended projects."
+              skeleton={<SkeletonBlock width="100%" height={60} />}
+            />
+          ) : (
+            <View style={s.recommendations}>
+              {(review ? (reviewProjects.data?.items ?? []) : recommendations).map(
+                ({ name, slug }) => (
+                  <ProjectRow key={slug} name={name} onPress={() => showProject(slug)} />
+                ),
+              )}
+            </View>
+          )}
         </>
       )}
     </Screen>

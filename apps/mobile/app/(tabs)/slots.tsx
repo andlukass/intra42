@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import {
+  type LayoutChangeEvent,
   Modal,
   Platform,
   Pressable,
@@ -10,20 +11,20 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type Slot, useIntraQuery, useProfile } from "../../src/api";
 import { ProfileSelector } from "../../src/home/ProfileSelector";
 import { ModalFooter } from "../../src/ModalFooter";
 import { useSession } from "../../src/session";
 import { slotBookingError } from "../../src/slots/bookingWindow";
 import { calendarDate, parseCalendarInput, utcISOString } from "../../src/slots/calendarTime";
-import { DayScheduleSkeleton, overlapsSlot } from "../../src/slots/DaySchedule";
+import { DayScheduleSkeleton, overlapsSlot, slotTimelineHeight } from "../../src/slots/DaySchedule";
 import { DaySchedulePager } from "../../src/slots/DaySchedulePager";
 import { SlotStartPicker } from "../../src/slots/SlotStartPicker";
 import { slotWeekPath } from "../../src/slots/slotWeek";
 import { weekLabel } from "../../src/slots/weekLabel";
 import { theme } from "../../src/theme";
-import { Button, QueryMessage, Screen, SkeletonBlock, styles, Toast, useToast } from "../../src/ui";
+import { Button, QueryMessage, SkeletonBlock, styles, Toast, useToast } from "../../src/ui";
 
 function localInput(date: Date) {
   const part = (number: number) => String(number).padStart(2, "0");
@@ -72,7 +73,13 @@ export default function Slots() {
   const [error, setError] = useState("");
   const { toast, showToast, hideToast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
-  const [selectingTime, setSelectingTime] = useState(false);
+  const { bottom } = useSafeAreaInsets();
+  const [timelineHeight, setTimelineHeight] = useState(0);
+  function measureTimeline({ nativeEvent }: LayoutChangeEvent) {
+    setTimelineHeight(
+      Math.min(slotTimelineHeight, Math.max(0, Math.floor(nativeEvent.layout.height) - 2)),
+    );
+  }
   const savingSlot = useRef(false);
 
   function showInvalidTime() {
@@ -287,42 +294,31 @@ export default function Slots() {
   const validEnd = end && Number.isFinite(end.getTime());
   const nextDay = validEnd && draft && end.toDateString() !== parse(draft.start).toDateString();
   return (
-    <Screen
-      scrollEnabled={!selectingTime}
-      refreshControl={
-        token ? (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void refresh()}
-            tintColor={theme.tealText}
-            colors={[theme.tealText]}
-          />
-        ) : undefined
-      }
-      overlay={toast ? <Toast {...toast} /> : null}
-    >
-      {loading ? (
-        <QueryMessage
-          pending
-          error={null}
-          empty=""
-          skeleton={
-            <View style={styles.card}>
-              <View style={slotStyles.toolbar}>
-                <View style={slotStyles.actions}>
-                  {[
-                    { key: "today", width: 68 },
-                    { key: "previous", width: 44 },
-                    { key: "next", width: 44 },
-                    { key: "new", width: 92 },
-                  ].map(({ key, width }) => (
-                    <SkeletonBlock key={key} width={width} height={44} radius={2} />
-                  ))}
-                </View>
-                <View style={{ alignItems: "center", minHeight: 28, justifyContent: "center" }}>
-                  <SkeletonBlock width="65%" height={23} radius={4} />
-                </View>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
+      <View style={[slotStyles.page, { paddingBottom: bottom + 60 }]}>
+        {loading ? (
+          <View
+            accessible
+            accessibilityLabel="Loading slot calendar"
+            accessibilityState={{ busy: true }}
+            style={[styles.card, slotStyles.calendarCard]}
+          >
+            <View style={slotStyles.toolbar}>
+              <View style={slotStyles.actions}>
+                {[
+                  { key: "today", width: 68 },
+                  { key: "previous", width: 44 },
+                  { key: "next", width: 44 },
+                  { key: "new", width: 92 },
+                ].map(({ key, width }) => (
+                  <SkeletonBlock key={key} width={width} height={44} radius={2} />
+                ))}
               </View>
+              <View style={{ alignItems: "center", minHeight: 28, justifyContent: "center" }}>
+                <SkeletonBlock width="65%" height={23} radius={4} />
+              </View>
+            </View>
+            <View style={slotStyles.calendarBody}>
               <View style={slotStyles.dayPicker}>
                 {days.map((date) => (
                   <View key={date.toISOString()} style={slotStyles.day}>
@@ -331,106 +327,120 @@ export default function Slots() {
                   </View>
                 ))}
               </View>
-              <DayScheduleSkeleton />
+              <View style={slotStyles.calendarBody} onLayout={measureTimeline}>
+                {timelineHeight > 0 && <DayScheduleSkeleton height={timelineHeight} />}
+              </View>
             </View>
-          }
-        />
-      ) : !token ? (
-        <Text style={styles.muted}>Sign in from Home to manage evaluation slots.</Text>
-      ) : (
-        <View style={styles.card}>
-          <View style={slotStyles.toolbar}>
-            <View style={slotStyles.actions}>
-              {[
-                {
-                  title: "Today",
-                  label: "Today",
-                  onPress: () => setDay(midnight(calendarDate(Date.now(), timeZone))),
-                },
-                { title: "‹", label: "Previous week", onPress: () => setDay(addDays(day, -7)) },
-                { title: "›", label: "Next week", onPress: () => setDay(addDays(day, 7)) },
-              ].map((action) => (
-                <Pressable
-                  key={action.label}
-                  accessibilityRole="button"
-                  accessibilityLabel={action.label}
-                  disabled={action.label === "Today" && isToday}
-                  accessibilityState={{ disabled: action.label === "Today" && isToday }}
-                  onPress={action.onPress}
-                  style={[
-                    slotStyles.toolbarButton,
-                    action.label === "Today" && slotStyles.today,
-                    action.label === "Today" && isToday && slotStyles.todayDisabled,
-                  ]}
-                >
-                  <Text
+          </View>
+        ) : !token ? (
+          <Text style={styles.muted}>Sign in from Home to manage evaluation slots.</Text>
+        ) : (
+          <View style={[styles.card, slotStyles.calendarCard]}>
+            <View style={slotStyles.toolbar}>
+              <View style={slotStyles.actions}>
+                {[
+                  {
+                    title: "Today",
+                    label: "Today",
+                    onPress: () => setDay(midnight(calendarDate(Date.now(), timeZone))),
+                  },
+                  { title: "‹", label: "Previous week", onPress: () => setDay(addDays(day, -7)) },
+                  { title: "›", label: "Next week", onPress: () => setDay(addDays(day, 7)) },
+                ].map((action) => (
+                  <Pressable
+                    key={action.label}
+                    accessibilityRole="button"
+                    accessibilityLabel={action.label}
+                    disabled={action.label === "Today" && isToday}
+                    accessibilityState={{ disabled: action.label === "Today" && isToday }}
+                    onPress={action.onPress}
                     style={[
-                      slotStyles.buttonText,
-                      action.label === "Today" && slotStyles.todayText,
+                      slotStyles.toolbarButton,
+                      action.label === "Today" && slotStyles.today,
+                      action.label === "Today" && isToday && slotStyles.todayDisabled,
                     ]}
                   >
-                    {action.title}
-                  </Text>
-                </Pressable>
-              ))}
-              <Pressable
-                accessibilityRole="button"
-                disabled={!id || !timeZone}
-                onPress={() => open()}
-                style={[slotStyles.toolbarButton, slotStyles.primary, !id && { opacity: 0.5 }]}
-              >
-                <Text style={slotStyles.primaryText}>New slot</Text>
-              </Pressable>
-            </View>
-            <Text style={slotStyles.week}>{weekLabel(week, addDays(week, 6))}</Text>
-          </View>
-          <View>
-            <View style={slotStyles.dayPicker}>
-              {days.map((date, index) => {
-                const selected = index === selectedDay;
-                return (
-                  <Pressable
-                    key={date.toISOString()}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={date.toDateString()}
-                    onPress={() => setDay(date)}
-                    style={[slotStyles.day, selected && slotStyles.selectedDay]}
-                  >
-                    <Text style={[slotStyles.dayText, selected && slotStyles.selectedDayText]}>
-                      {date.toLocaleDateString("en", { weekday: "short" })}
-                    </Text>
-                    <Text style={[slotStyles.dayNumber, selected && slotStyles.selectedDayText]}>
-                      {date.getDate()}
+                    <Text
+                      style={[
+                        slotStyles.buttonText,
+                        action.label === "Today" && slotStyles.todayText,
+                      ]}
+                    >
+                      {action.title}
                     </Text>
                   </Pressable>
-                );
-              })}
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!id || !timeZone}
+                  onPress={() => open()}
+                  style={[slotStyles.toolbarButton, slotStyles.primary, !id && { opacity: 0.5 }]}
+                >
+                  <Text style={slotStyles.primaryText}>New slot</Text>
+                </Pressable>
+              </View>
+              <Text style={slotStyles.week}>{weekLabel(week, addDays(week, 6))}</Text>
             </View>
+            <View style={slotStyles.calendarBody}>
+              <View style={slotStyles.dayPicker}>
+                {days.map((date, index) => {
+                  const selected = index === selectedDay;
+                  return (
+                    <Pressable
+                      key={date.toISOString()}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={date.toDateString()}
+                      onPress={() => setDay(date)}
+                      style={[slotStyles.day, selected && slotStyles.selectedDay]}
+                    >
+                      <Text style={[slotStyles.dayText, selected && slotStyles.selectedDayText]}>
+                        {date.toLocaleDateString("en", { weekday: "short" })}
+                      </Text>
+                      <Text style={[slotStyles.dayNumber, selected && slotStyles.selectedDayText]}>
+                        {date.getDate()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-            {slots.data ? (
-              <DaySchedulePager
-                day={day}
-                slots={slots.data}
-                onSelect={open}
-                onDragSelect={saveDraggedSlot}
-                onCancel={cancelSlot}
-                saving={mutation.isPending || cancellation.isPending}
-                onSelectionChange={setSelectingTime}
-                onInvalidTime={showInvalidTime}
-                onChangeDay={(offset) => setDay((current) => addDays(current, offset))}
-              />
-            ) : (
-              <QueryMessage
-                pending={profile.isPending || slots.isPending}
-                error={profile.error ?? slots.error}
-                empty="Could not load the calendar."
-                skeleton={<DayScheduleSkeleton />}
-              />
-            )}
+              <View style={slotStyles.calendarBody} onLayout={measureTimeline}>
+                {timelineHeight > 0 &&
+                  (slots.data ? (
+                    <DaySchedulePager
+                      day={day}
+                      slots={slots.data}
+                      onSelect={open}
+                      onDragSelect={saveDraggedSlot}
+                      onCancel={cancelSlot}
+                      saving={mutation.isPending || cancellation.isPending}
+                      height={timelineHeight}
+                      refreshControl={
+                        <RefreshControl
+                          refreshing={refreshing}
+                          onRefresh={() => void refresh()}
+                          tintColor={theme.tealText}
+                          colors={[theme.tealText]}
+                        />
+                      }
+                      onInvalidTime={showInvalidTime}
+                      onChangeDay={(offset) => setDay((current) => addDays(current, offset))}
+                    />
+                  ) : (
+                    <QueryMessage
+                      pending={profile.isPending || slots.isPending}
+                      error={profile.error ?? slots.error}
+                      empty="Could not load the calendar."
+                      skeleton={<DayScheduleSkeleton height={timelineHeight} />}
+                    />
+                  ))}
+              </View>
+            </View>
           </View>
-        </View>
-      )}
+        )}
+      </View>
+      {toast && <Toast {...toast} />}
       <Modal
         visible={!!draft}
         animationType="slide"
@@ -502,7 +512,7 @@ export default function Slots() {
           {toast && <Toast {...toast} bottom={100} />}
         </SafeAreaView>
       </Modal>
-    </Screen>
+    </SafeAreaView>
   );
 }
 
@@ -534,9 +544,12 @@ const slotStyles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  toolbar: { gap: 16, paddingTop: 8 },
-  week: { color: "#00babc", fontSize: 23, fontWeight: "600", textAlign: "center" },
-  actions: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: 5 },
+  page: { flex: 1, padding: 12 },
+  calendarCard: { flex: 1, maxHeight: slotTimelineHeight + 176, padding: 12, gap: 12 },
+  calendarBody: { flex: 1 },
+  toolbar: { gap: 12 },
+  week: { color: "#00babc", fontSize: 23, lineHeight: 28, fontWeight: "600", textAlign: "center" },
+  actions: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: 6 },
   toolbarButton: {
     minHeight: 44,
     minWidth: 44,
@@ -555,7 +568,7 @@ const slotStyles = StyleSheet.create({
   dayPicker: { flexDirection: "row", borderWidth: 1, borderBottomWidth: 0, borderColor: "#ddd" },
   day: {
     flex: 1,
-    minHeight: 58,
+    minHeight: 52,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 3,

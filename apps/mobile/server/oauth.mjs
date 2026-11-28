@@ -13,7 +13,11 @@ const {
 if (!INTRA42_CLIENT_ID || !INTRA42_CLIENT_SECRET) {
   throw new Error("Configure INTRA42_CLIENT_ID and INTRA42_CLIENT_SECRET.");
 }
-const redirect = new URL(INTRA42_REDIRECT_URI ?? `http://localhost:${PORT}/callback`);
+const redirect = new URL(
+  process.env.INTRA42_FUNCTIONS === "1"
+    ? "https://api-intra.web.app/callback"
+    : (INTRA42_REDIRECT_URI ?? `http://localhost:${PORT}/callback`),
+);
 const loopback =
   redirect.protocol === "http:" &&
   ["localhost", "127.0.0.1"].includes(redirect.hostname) &&
@@ -238,7 +242,7 @@ async function sendAchievementIcon(req, res, path) {
   return send(res, 200, { uri: `data:${type};base64,${Buffer.concat(chunks).toString("base64")}` });
 }
 
-async function handle(req, res) {
+export async function handle(req, res) {
   const url = new URL(req.url, redirect.origin);
   if (req.method === "GET" && url.pathname === "/search-photo") {
     const sources = url.searchParams.getAll("source");
@@ -360,12 +364,13 @@ async function handle(req, res) {
   });
 }
 
-createServer((req, res) => {
-  void handle(req, res).catch(() => {
-    if (!res.headersSent)
-      send(res, 502, { error: "Could not load data from 42. Please try again shortly." });
+if (process.env.INTRA42_FUNCTIONS !== "1")
+  createServer((req, res) => {
+    void handle(req, res).catch(() => {
+      if (!res.headersSent)
+        send(res, 502, { error: "Could not load data from 42. Please try again shortly." });
+    });
+  }).listen(Number(PORT), "127.0.0.1", () => {
+    console.log(`Sign-in service listening on ${PORT}`);
+    console.log(sessionStoreDescription);
   });
-}).listen(Number(PORT), "127.0.0.1", () => {
-  console.log(`Sign-in service listening on ${PORT}`);
-  console.log(sessionStoreDescription);
-});

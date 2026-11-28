@@ -15,8 +15,10 @@ The iOS Search button uses the system search tab role.
 With an empty search field, **Recently searched** lists up to twenty profiles
 and projects opened from results, newest first. Reopening an entry moves it to
 the top. Each row has a separate remove button. History persists in the app's
-local documents file `recent-searches.json` on that phone and is never uploaded
-or synchronized. Removing an entry also persists across app restarts. If local
+local documents file `recent-searches-<account-id>.json` on that phone, scoped to
+the signed-in 42 account ID, and is never uploaded or synchronized. Switching
+accounts shows only that account’s history; signing back in restores its entries.
+The old unscoped `recent-searches.json` is ignored because its owner is unknown. Removing an entry also persists across app restarts. If local
 storage is unavailable, the screen keeps the change in memory and reports that
 it could not save it.
 Student thumbnails use the exact `cdn_uri` returned by official search, without
@@ -43,12 +45,7 @@ detail screen. The screen loads metadata and steps from `/v2/projects/:slug`
 and the current team from `/v2/projects_users/:id` for enrolled projects.
 Project attachments download and open the native file share sheet.
 
-Holy Graph opens a native map with one-finger dragging in any direction, two-finger pinch zoom anchored between the fingers, zoom/reset controls, and project search. Gesture Handler and Reanimated update the camera and transform a vector group inside the SVG on the UI thread, so zoom redraws crisp vectors and text instead of enlarging a bitmap. The SVG fits its fixed overview viewBox to the canvas on the native side, including the first draw. Canvas measurements are used for gesture coordinates. Project names stay visible in white at every zoom level. React updates only when selection/progress changes or a gesture ends (for the zoom controls). Pinch zoom is limited to 1×–12×; after a pinch, lifting one finger does not move the camera through a residual pan, and dragging does not select projects. Selecting a project only highlights it; it does not recenter or change zoom. The details footer keeps a fixed height to avoid resizing the graph when selection changes. Only search results, zoom buttons, and Reset view explicitly move the camera. Its bundled
-42cursus coordinates and connections come from the official `/v2/project_data`
-and project session endpoints. The bundled layout uses the Lisboa geometry when
-available and shared 42cursus geometry for the remaining nodes. The signed-in
-profile supplies project progress through the authenticated broker. Campus-specific
-availability and layout updates remain on the official graph linked in the map.
+Holy Graph opens a native map with one-finger dragging in any direction, two-finger pinch zoom anchored between the fingers, zoom/reset controls, and project search. Gesture Handler and Reanimated update the camera and transform a vector group inside the SVG on the UI thread, so zoom redraws crisp vectors and text instead of enlarging a bitmap. The SVG fits its fixed overview viewBox to the canvas on the native side, including the first draw. Canvas measurements are used for gesture coordinates. Project names stay visible at every zoom level. Each project state has its own fill, border, and text colors. React updates only when selection/progress changes or a gesture ends (for the zoom controls). Pinch zoom is limited to 1×–12×; after a pinch, lifting one finger does not move the camera through a residual pan, and dragging does not select projects. Selecting a project only highlights it; it does not recenter or change zoom. The details footer keeps a fixed height to avoid resizing the graph when selection changes. Only search results, zoom buttons, and Reset view explicitly move the camera. For signed-in profiles, the broker reads the official graph data for the selected course and campus. For 42cursus, it uses the profile's curriculum variant to place the core projects and clips incoming connections to the outer ring. C Piscine uses the positions supplied by 42. The bundled graph is used for demo mode.
 
 ## Run from the repository root
 
@@ -58,11 +55,10 @@ npm run ios -- --device "iPhone 17"
 npm run android
 ```
 
-Use `npm run dev:all` to start both Metro and the local sign-in/API backend,
-including when the app uses an HTTPS proxy such as Tailscale. It loads
-`apps/mobile/.env` through the mobile start command. The backend listens on its
-configured `PORT` (default 8787); Metro defaults to 8081. The configured HTTPS
-address must already forward to that backend port.
+Use `npm run dev:all` to start Metro and the Nest API in the Firebase Functions,
+Firestore and Hosting emulators. The app uses `http://127.0.0.1:8787` in this mode;
+Metro defaults to 8081. `npm run dev:functions` starts only the backend emulators.
+See [the backend README](../functions/README.md) for configuration and persistence.
 
 The terminal follows Delphi's service-log navigation: **0** shows both logs,
 **1** Metro, **2** Backend, and **q** the addresses. Combined logs are the default.
@@ -88,6 +84,20 @@ Set `EXPO_PUBLIC_INTRA42_DEMO=1` when starting Metro to test with simulated
 profile, events and slot data. Demo mode does not start the local backend.
 Demo slot changes stay in memory.
 
+### Local iOS screenshots
+
+With the Intra42 development build installed on an iPhone 17 simulator and
+FFmpeg available, run `npm run screenshots:mobile` from the repository root.
+The script starts a separate Metro server in demo mode, then captures Home,
+Projects, Holy Graph, Project list, Slots, and Clusters. It waits for each
+route and its queries to settle before taking the screenshot. It saves framed
+PNGs to the ignored `output/mobile-screenshots/` directory. No sign-in or
+upload is involved. Use `SCREENSHOT_METRO_PORT` if port `8093` is occupied.
+
+The script reopens Intra42 on the selected simulator in demo mode and stops
+its Metro server when it finishes. Reopen the app using your usual Metro server
+to return to your development session.
+
 After adding a native dependency such as `expo-image` or `expo-blur`, rebuild and reinstall the
 development app with `npm run ios -- --device "iPhone 17" --no-bundler` when Metro
 is already running. Fast Refresh cannot add native modules to an installed app;
@@ -101,11 +111,11 @@ to apply the native configuration, then rebuild and reinstall.
 ## Sign in through your own server
 
 The mobile app now uses the username/password portal flow from `unofficial-login`.
-The web and native services share the Chrome worker, refresh grants, and scoped
+The web and native services share the HTTP login flow, refresh grants, and scoped
 calendar cookies in `packages/portal-server`. The web app keeps its own local
 browser endpoints and UI.
 
-1. Use Node.js 22.12+ for the sign-in service and install Google Chrome on its host.
+1. Use Node.js 22.12+ for the sign-in service; Chrome is not required.
 2. Copy [.env.example](.env.example) to `.env` in this workspace. Keep
    `INTRA42_CLIENT_ID` and `INTRA42_CLIENT_SECRET` on the server. They are used
    for allow-listed API reads with a `public` application grant; account sign-in
@@ -127,17 +137,15 @@ service. The broker binds to loopback; an HTTPS reverse proxy should forward
 `/search-photo`, and `/achievement-icon` to it. The proxy must preserve the public HTTP Host.
 Do not add a browser Origin header to native requests.
 
-The backend opens the official portal in an isolated headless Chrome context,
-checks the `auth.42.fr` destination before filling credentials, reads the completed
-portal session, then closes Chrome. Credentials pass through the server and are
-never persisted by the app. MFA, CAPTCHA, or changes to the official login page
-can require an interactive step that this automated flow does not support.
+The backend submits the official `auth.42.fr` login form over HTTP using an isolated
+cookie jar, an authorization code with PKCE and state validation, and legacy portal
+SSO. Credentials pass through the server and are never persisted. MFA, CAPTCHA or
+changes to the official login flow can require an unsupported interactive step.
 
-Sign-in requires a renewable session. The worker reads the official portal's
-stored OIDC refresh token, with the observed token response as a fallback, and
-verifies an exchange before returning to the app. The rotated grant is saved
-server-side; the app receives only its opaque local session key. Missing or
-rejected grants fail sign-in instead of silently logging out at access expiry.
+Sign-in requires a renewable session. The backend exchanges the authorization code,
+verifies refresh-token renewal before completing login, and retains the rotated grant
+server-side. The app receives only an opaque session key. The Playwright HTTP client
+manages cookies without launching or installing a browser.
 
 ### Authentication browser
 
@@ -176,9 +184,9 @@ No password or session key is included in the callback URL.
 
 - `POST /session/exchange` returns the opaque session key after browser sign-in.
   The former native `POST /session/login` remains available for compatibility. Upstream access tokens, refresh grants, and cookies stay on the server and
-  are checkpointed to its private temporary session file. The mobile app saves only its opaque key and expiry in SecureStore.
+  are stored in private Firestore documents in Functions (a private temporary file in the standalone broker). The mobile app saves only its opaque key and expiry in SecureStore.
 - `POST /session/restore` checks the SecureStore key on app startup. The broker
-  restores that key and its upstream credentials from disk after a restart.
+  restores that key and its upstream credentials from the configured persistence after a restart.
   Editing/reloading the native app therefore preserves an unexpired session.
   Previous OAuth sessions are not restored by this login flow.
 - `POST /session/refresh` renews the upstream grant when available. The app renews
@@ -201,8 +209,8 @@ No password or session key is included in the callback URL.
   Cancellation reloads a wider calendar window before matching the exact slot,
   preserving the boundary quarters and all official IDs returned by 42.
 - Native endpoints reject browser Origin/Fetch Metadata headers and direct
-  non-loopback connections. A reverse proxy terminates HTTPS and connects to
-  the local broker. Responses use `Cache-Control: no-store`.
+  non-loopback connections in the standalone broker. Functions accepts external native
+  connections and verifies session keys; its browser login retains Origin and CSRF checks. Responses use `Cache-Control: no-store`.
 
 ### Temporary session file
 
@@ -344,11 +352,11 @@ and milestone progress share one continuous coalition-colored profile container;
 their inner panels retain their own borders and spacing. The app starts these
 queries in parallel with the other profile widgets as soon as the user's ID
 is known. Alumnization, pace, and attendance each have an independent request
-queue, separate from the public API's rate limit. The initial profile skeleton
-stays visible until those applicable queries and the existing profile resources
-have settled, so panels do not appear later and shift the content. A missing
-record or failed query does not leave the profile stuck loading. Background
-refreshes retain the already displayed content. The native service reads the viewed
+queue, separate from the public API's rate limit. The initial profile skeleton gives way to the identity and contact details as
+soon as the profile arrives. The avatar, alumnization, milestone progress,
+attendance, agenda, and logtime use their own placeholders as needed. The
+coalition palette updates when its data arrives. Background refreshes retain
+the already displayed content. The native service reads the viewed
 user's `/api/v1/alumni_auto/:id` on `alumni-management.42.fr` with the portal
 grant. Missing dates and banned countdowns do not display a panel. Existing
 alumni show their alumnization date. The benefits button opens the official
@@ -648,7 +656,7 @@ Maps initially scroll past oversized SVG margins to start near the first seats, 
 
 The Clusters loading skeleton mirrors the campus header and action, horizontal tabs, occupancy legend, and desk layout on a white canvas, instead of a single solid placeholder.
 
-Slots skeletons mirror the toolbar order, centered week label, seven day columns, and 400-point calendar grid. Hour placeholders appear in the left time column, with neutral bars across the schedule rows to indicate that availability is still loading.
+Slots skeletons mirror the toolbar order, centered week label, seven day columns, and calendar grid up to 500 points tall, with scrolling limited to the time grid. Hour placeholders appear in the left time column, with neutral bars across the schedule rows to indicate that availability is still loading.
 
 
 The Projects overview keeps a single-column list inspired by the official portal: turquoise open-team rows with lightning icons, gray recommended-project rows with stars, and turquoise Holy Graph / Project list shortcuts between Open teams and Recommended projects.
@@ -734,3 +742,116 @@ Official chart data can include negative grade bins (for example `-40` for
 Libft). These are valid grades and do not invalidate the other charts. Counters
 and percentages must still be finite and nonnegative. The campus chart keeps
 the official visible grade range of 0–125.
+
+Holy Graph places its course selector and project search side by side in translucent
+blurred fields over the bottom of the full-height map. Selecting a project opens
+a dark outlined preview above the graph, with its name, earned mark when available,
+official estimated duration and description. Tap its name to open project details
+or tap outside the card (including the search and course fields) to dismiss it.
+The Close button also dismisses the preview. Zoom uses pinch gestures; the former bottom panel,
+zoom buttons and portal link have been removed.
+
+On iOS, Holy Graph extends behind its transparent native navigation header, using
+a lighter system ultra-thin-material blur so the graph remains visible underneath. The title and back button stay
+visible above the map.
+
+On Android, Holy Graph also draws behind the transparent native navigation
+header. Its header background uses Expo BlurView at intensity 25, sampling the
+map's BlurTargetView with the Android native blur method. iOS keeps its native
+ultra-thin material. Both preserve the native title and back button, with the
+map canvas extending beneath the header.
+
+The Holy Graph course selector offers 42 cursus and C Piscine, matching the
+portal. Selecting a course clears the search/selection and resets the view.
+42 cursus keeps the bundled layout; C Piscine loads its official campus layout
+and states through `/api/holy-graph?login=…&campus=…&cursus_id=9&layout=1`.
+Search and hit testing use only the selected course's nodes. Pending or failed
+course requests show loading/retry controls instead of the previous course.
+
+## Over-the-air updates
+
+Release builds check for JavaScript and asset updates at startup. A downloaded update
+takes effect on a later cold launch. Install a fresh native build to enable OTA for the
+first time or after changing native dependencies or configuration. The platform,
+channel, and Expo runtime fingerprint must match the published update.
+
+Copy [the OTA environment template](../ota/.env.example) to `apps/ota/.env` and set
+the Firebase project, bucket, update URL, function service account, and region. The file is
+ignored by Git. Without an update URL, release builds use their embedded bundle.
+The public update URL is embedded in OTA-enabled builds. Keep credentials out of all
+`EXPO_PUBLIC_` variables.
+
+Run from the repository root. The default channel is `production`; set `OTA_CHANNEL`
+on both native commands when preparing preview builds. Rerun prebuild when changing
+the update URL or channel so the existing native projects pick up the new configuration.
+
+```sh
+OTA_CHANNEL=preview npm exec --workspace @intra42/mobile -- expo prebuild --platform ios
+OTA_CHANNEL=preview npm run ios -- --configuration Release --no-bundler
+OTA_CHANNEL=preview npm exec --workspace @intra42/mobile -- expo prebuild --platform android
+OTA_CHANNEL=preview npm run android -- --variant release --no-bundler
+
+npm run update:ota -- --channel preview
+npm run update:ota -- --platform android --channel production
+npm run update:ota -- --prepare-only
+```
+
+Use JDK 17 for Android builds. Use the usual signing credentials for a release
+build installed on a physical device.
+The publisher uses the working tree and active Google Cloud CLI account. It writes
+exports under the ignored `output/` directory. See the [OTA infrastructure guide](../ota/README.md)
+for deployment, publishing permissions, and recovery.
+
+## iOS review account with the Firestore Emulator
+
+From the repository root, install the npm dependencies and make the Firebase CLI
+and a compatible JDK available on your PATH. Use a development build on the iOS
+Simulator. If you only have a Release build, install a development build first
+with `npm run ios -- --device "iPhone 17" --no-bundler`.
+
+```sh
+cp apps/mobile/.env.review.example apps/mobile/.env.review
+npm run review:ios
+```
+
+Open the Intra42 development client with the Metro URL
+`http://127.0.0.1:8094`. Tap **Sign in** and enter **test** / **123456**.
+The command starts a loopback-only review sign-in service on port 8791 and the
+Firestore Emulator on port 8089 in a separate `demo-` Firebase project. The app
+stores the review login separately from the normal 42 login.
+
+- **Home** shows a rolling seven-day agenda based on Lisbon time. Local sign-in
+  generates missing days with randomly chosen events, times, and attendance.
+  Dates still in the agenda retain their events and subscriptions across logins.
+  Sign-in also fills missing Logtime days through today, starting with the four
+  months shown in the app. Saved days, including days off, stay intact.
+- **Slots** supports opening and canceling evaluation availability. The review
+  service saves slots in Firestore and applies the same booking window and
+  15-minute increments as the app.
+- **Projects** shows a fictional project catalog with details, search, recommended
+  projects, and a Holy Graph derived from the same projects and prerequisites.
+- **Search** finds fictional classmates by login or name. The feedback logs link
+  to those same profiles and include completed evaluations for fictional projects.
+  The server seeds these fixtures and the project catalog on startup. Run
+  `npm run review:seed` while the emulator is running to refresh them.
+
+Run the integration test while the review environment is running:
+
+```sh
+node --env-file=apps/mobile/.env.review --test apps/mobile/server/review/review.integration.mjs
+```
+
+Stop the command with Ctrl+C to export review data to the ignored
+`output/review-firestore/` directory. The next run imports that data. App
+sessions last for up to 24 hours and survive service restarts when the emulator
+restores the exported data.
+
+This configuration is for local review rehearsals on the simulator. An Apple
+reviewer will need a build pointed at a reachable HTTPS review service. The
+emulator setup has no deployed backend.
+
+Review portraits use 96 px thumbnails in search and 640 px images when the
+full profile photo is opened. Set `REVIEW_PORTRAITS_BUCKET` in
+`apps/mobile/.env.review` to read the private copies under
+`review-portraits-v1/` with the local Google Cloud CLI account. The broker
+can serve the local copies when the bucket is unavailable.

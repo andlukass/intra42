@@ -1,0 +1,48 @@
+{
+  "functions": [
+    {
+      "source": "apps/ota",
+      "codebase": "intra42-ota"
+    },
+    {
+      "source": "apps/functions",
+      "codebase": "intra42-api",
+      "predeploy": ["npm run build --workspace @intra42/functions"]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "site": "api-intra",
+    "public": "apps/functions/public",
+    "rewrites": [
+      {
+        "source": "**",
+        "function": {
+          "functionId": "api",
+          "region": "europe-west1"
+        }
+      }
+    ]
+  },
+  "emulators": {
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8080
+    },
+    "hosting": {
+      "host": "127.0.0.1",
+      "port": 8787
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
+  }
+}

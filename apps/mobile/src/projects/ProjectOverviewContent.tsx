@@ -5,7 +5,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { api } from "../api";
 import { CircularLoader } from "../CircularLoader";
-import { useSession } from "../session";
+import { review, useSession } from "../session";
 import { theme } from "../theme";
 import { Button, QueryMessage, styles } from "../ui";
 import type { OfficialProjectOverview } from "./overview";
@@ -246,50 +246,51 @@ export function ProjectOverviewContent({
             ))}
         </View>
       )}
-      {(data.registrations.length > 0 || data.registrationsError || !!studentLists.length) && (
-        <View style={styles.card}>
-          <Text accessibilityRole="header" style={s.heading}>
-            Project activity
-          </Text>
-          {data.registrations.map((line, index) => (
-            <View key={line} style={s.activity}>
-              <Svg width={22} height={24} viewBox="0 0 24 24" accessible={false}>
-                <Path
-                  d={activityIcons[index % activityIcons.length]}
-                  fill="none"
-                  stroke={theme.muted}
-                  strokeWidth={1.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-              <Text style={[s.copy, { flex: 1 }]}>{line}</Text>
-            </View>
-          ))}
-          {studentLists.map((list) => (
-            <Pressable
-              key={list.kind}
-              accessibilityRole="link"
-              onPress={() =>
-                router.push({
-                  pathname: "/project-students",
-                  params: { slug: list.slug, kind: list.kind, project: data.name },
-                })
-              }
-              style={[s.activity, { minHeight: 44, alignItems: "center" }]}
-            >
-              <Svg width={22} height={24} viewBox="0 0 24 24" accessible={false}>
-                <Path d={activityIcons[0]} fill="none" stroke={theme.muted} strokeWidth={1.5} />
-              </Svg>
-              <Text style={[s.link, { flex: 1 }]}>{list.label}</Text>
-            </Pressable>
-          ))}
-          {data.registrationsError && <Text style={styles.muted}>{data.registrationsError}</Text>}
-          {data.registrationsError && (
-            <Button title="Try again" variant="outline" onPress={onRetry} />
-          )}
-        </View>
-      )}
+      {!review &&
+        (data.registrations.length > 0 || data.registrationsError || !!studentLists.length) && (
+          <View style={styles.card}>
+            <Text accessibilityRole="header" style={s.heading}>
+              Project activity
+            </Text>
+            {data.registrations.map((line, index) => (
+              <View key={line} style={s.activity}>
+                <Svg width={22} height={24} viewBox="0 0 24 24" accessible={false}>
+                  <Path
+                    d={activityIcons[index % activityIcons.length]}
+                    fill="none"
+                    stroke={theme.muted}
+                    strokeWidth={1.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+                <Text style={[s.copy, { flex: 1 }]}>{line}</Text>
+              </View>
+            ))}
+            {studentLists.map((list) => (
+              <Pressable
+                key={list.kind}
+                accessibilityRole="link"
+                onPress={() =>
+                  router.push({
+                    pathname: "/project-students",
+                    params: { slug: list.slug, kind: list.kind, project: data.name },
+                  })
+                }
+                style={[s.activity, { minHeight: 44, alignItems: "center" }]}
+              >
+                <Svg width={22} height={24} viewBox="0 0 24 24" accessible={false}>
+                  <Path d={activityIcons[0]} fill="none" stroke={theme.muted} strokeWidth={1.5} />
+                </Svg>
+                <Text style={[s.link, { flex: 1 }]}>{list.label}</Text>
+              </Pressable>
+            ))}
+            {data.registrationsError && <Text style={styles.muted}>{data.registrationsError}</Text>}
+            {data.registrationsError && (
+              <Button title="Try again" variant="outline" onPress={onRetry} />
+            )}
+          </View>
+        )}
       {data.statistics && <ProjectCharts statistics={data.statistics} />}
       {data.statisticsError && (
         <View style={styles.card}>

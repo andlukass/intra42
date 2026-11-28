@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Page } from "playwright";
 import { isLocalPost, json } from "./http.ts";
+import { onSessionReload, setTimeout } from "./session-runtime.ts";
 import { readSessionRecords, writeSessionRecords } from "./session-store.ts";
 import { extendSlotSession, revokeSlotSession } from "./slots.ts";
 
@@ -44,32 +45,36 @@ export function storedRefreshGrant(key: string, refreshToken: unknown): RefreshG
     refreshToken,
   };
 }
-for (const record of readSessionRecords("refresh")) {
-  const entry = record as RefreshGrant & { key: string; expiresAt: number };
-  if (
-    !entry ||
-    typeof entry.key !== "string" ||
-    typeof entry.refreshToken !== "string" ||
-    !entry.refreshToken ||
-    typeof entry.clientId !== "string" ||
-    !Number.isFinite(entry.expiresAt) ||
-    entry.expiresAt <= Date.now()
-  )
-    continue;
-  if (typeof entry.endpoint !== "string" || !URL.canParse(entry.endpoint)) continue;
-  const endpoint = new URL(entry.endpoint);
-  if (
-    endpoint.origin !== "https://auth.42.fr" ||
-    endpoint.username ||
-    endpoint.password ||
-    !/^\/(?:auth\/)?realms\/[^/]+\/protocol\/openid-connect\/token$/.test(endpoint.pathname)
-  )
-    continue;
-  sessions.set(entry.key, {
-    ...entry,
-    timer: setTimeout(() => expire(entry.key), entry.expiresAt - Date.now()).unref(),
-  });
-}
+await onSessionReload(async () => {
+  for (const entry of sessions.values()) clearTimeout(entry.timer);
+  sessions.clear();
+  for (const record of readSessionRecords("refresh")) {
+    const entry = record as RefreshGrant & { key: string; expiresAt: number };
+    if (
+      !entry ||
+      typeof entry.key !== "string" ||
+      typeof entry.refreshToken !== "string" ||
+      !entry.refreshToken ||
+      typeof entry.clientId !== "string" ||
+      !Number.isFinite(entry.expiresAt) ||
+      entry.expiresAt <= Date.now()
+    )
+      continue;
+    if (typeof entry.endpoint !== "string" || !URL.canParse(entry.endpoint)) continue;
+    const endpoint = new URL(entry.endpoint);
+    if (
+      endpoint.origin !== "https://auth.42.fr" ||
+      endpoint.username ||
+      endpoint.password ||
+      !/^\/(?:auth\/)?realms\/[^/]+\/protocol\/openid-connect\/token$/.test(endpoint.pathname)
+    )
+      continue;
+    sessions.set(entry.key, {
+      ...entry,
+      timer: setTimeout(() => expire(entry.key), entry.expiresAt - Date.now()).unref(),
+    });
+  }
+});
 function persist() {
   return writeSessionRecords(
     "refresh",

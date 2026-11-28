@@ -8,14 +8,16 @@
     "./refresh": "./refresh.ts",
     "./slots": "./slots.ts",
     "./http": "./http.ts",
-    "./session-store": "./session-store.ts"
+    "./session-store": "./session-store.ts",
+    "./session-runtime": "./session-runtime.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
-    "playwright": "^1.63.0"
+    "playwright": "^1.63.0",
+    "firebase-admin": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

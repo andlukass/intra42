@@ -27,7 +27,7 @@ portal issued a refresh token, accepted its exchange, and served the agenda
 using the renewed access token.
 
 The Vite adapter lives in [server/login.ts](server/login.ts), registered in
-[vite.config.ts](vite.config.ts). The Chrome worker, refresh grants, calendar
+[vite.config.ts](vite.config.ts). The HTTP login flow, refresh grants, calendar
 cookies, and request validation live in the shared
 [`packages/portal-server`](../../packages/portal-server) workspace, also used by
 the native sign-in service. The web endpoints retain their same-origin,
@@ -37,8 +37,7 @@ The form lives in [src/pages/SignIn.tsx](src/pages/SignIn.tsx). The app holds th
 
 ### Run the test
 
-Install Google Chrome on the machine running Vite, then run these commands from
-the repository root.
+Run these commands from the repository root; no Chrome installation is required.
 
 ```sh
 npm ci
@@ -47,37 +46,23 @@ npm run dev:web -- --host 127.0.0.1 --port 5173 --strictPort
 
 Open http://127.0.0.1:5173/, enter your 42 login and password, and select **Sign in**. The dashboard loads automatically.
 
-Playwright launches the installed Google Chrome with `channel: "chrome"`. The
-server needs network access to the official authentication, profile, and internal
+Playwright provides a standalone HTTP client and cookie jar; it launches no browser.
+The server needs network access to the official authentication, profile, and internal
 API hosts.
 
 ### Login flow
 
 1. The form sends a URL-encoded POST to the same-origin endpoint
    `/local-api/login`. The local backend reads `username` and `password`.
-2. The backend launches headless Chrome with a fresh, isolated browser context
-   and opens `https://profile-v3.intra.42.fr/`.
-3. The official portal redirects to `auth.42.fr`. The backend checks that hostname,
-   fills the official username and password fields, and submits `#kc-login`.
-4. The official site completes its OpenID Connect flow and redirects back to
-   `profile-v3.intra.42.fr`.
-5. After the profile document loads, the backend waits up to 20 seconds, within
-   the overall login deadline, for an `oidc.user:*` entry in the portal's
-   `sessionStorage`. It reads `access_token` and `expires_at`, verifies that the
-   token has time remaining, and reads the stored refresh token and OIDC
-   authority/client ID. The official token response is a fallback if storage
-   does not include a refresh token. The backend requires a refresh grant and
-   verifies one exchange before completing sign-in. It keeps the rotated grant
-   server-side and returns the renewed access token and a random local session
-   ID to the Intra42 tab. Raw refresh tokens never reach the Intra42 client.
-6. The backend gives the official account avatar up to four seconds to load in
-   the authenticated browser. It copies the image response from the 42 CDN into
-   the login response. The dashboard uses that image for both avatars and keeps
-   it in the current tab's session. If the CDN image is unavailable, the
-   profile shows the default icon.
-7. The backend closes the isolated browser in a `finally` block after the attempt.
-   The frontend keeps the token and its calculated expiry in React state and
-   saves the session in the current tab's `sessionStorage`.
+2. The backend creates an isolated HTTP cookie jar, loads OIDC discovery and
+   requests authorization with a random state and PKCE challenge.
+3. It validates the official `auth.42.fr` form destination, submits credentials,
+   checks the returned state and exchanges the authorization code using the verifier.
+4. It establishes legacy portal SSO cookies and verifies refresh-token renewal.
+   Rotated refresh grants remain server-side; credentials are never persisted.
+5. The frontend stores the access token and calculated expiry in React state and
+   the current tab's `sessionStorage`. The HTTP cookie context is disposed after login.
+   Interactive MFA/CAPTCHA steps are not supported by this flow.
 
 ### Dashboard data
 
@@ -97,12 +82,10 @@ upstream GET requests.
 | Coalition | `profile.intra.42.fr/users/:id/coalitions?cursus=:slug` |
 | Logtime | `translate.intra.42.fr/users/:id/locations_stats/` |
 
-When the official page returns coalition and logtime data during the isolated
-login, the server includes those responses alongside the token. React Query uses
-that data for the matching profile and cursus slug. The dashboard opens the
-first cursus returned by 42, matching the official portal. Other reads go through the server
-module. Query cache keys use a random ID for each login. Signing out or losing
-the ability to renew an expired session clears that login's queries.
+Coalition and logtime reads go through the server module rather than being captured
+while loading the official page. The dashboard opens the first cursus returned by
+42. Query cache keys use a random ID for each login. Signing out or losing the
+ability to renew an expired session clears that login's queries.
 
 ### Why requests go through the local backend
 

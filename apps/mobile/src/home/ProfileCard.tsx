@@ -191,6 +191,7 @@ function ProfileContact({
 export function ProfileCard({
   user,
   avatar,
+  avatarPending = false,
   campus,
   course: current,
   palette,
@@ -201,6 +202,7 @@ export function ProfileCard({
 }: {
   user: Profile;
   avatar?: ImageRef | null;
+  avatarPending?: boolean;
   campus?: string;
   course?: NonNullable<Profile["cursus_users"]>[number];
   palette: ProfilePalette;
@@ -254,6 +256,19 @@ export function ProfileCard({
                 accessibilityIgnoresInvertColors
               />
             </Pressable>
+          ) : avatarPending ? (
+            <View
+              accessible
+              accessibilityLabel="Loading profile photo"
+              accessibilityState={{ busy: true }}
+            >
+              <SkeletonBlock
+                color={palette.skeleton}
+                width={s.avatar.width}
+                height={s.avatar.height}
+                radius={38}
+              />
+            </View>
           ) : (
             <View style={[avatarStyle, s.fallback]}>
               <Text style={s.initials}>{initials}</Text>

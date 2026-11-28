@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
-import { type SearchResults, useIntraQuery, useSearchPhoto } from "../../src/api";
+import { type SearchResults, useIntraQuery, useProfile, useSearchPhoto } from "../../src/api";
 import {
   type RecentSearch,
   readRecentSearches,
@@ -56,6 +56,13 @@ function StudentPhoto({ user }: { user: SearchResults["users"][number] }) {
 }
 
 export default function Search() {
+  const { token } = useSession();
+  const profile = useProfile();
+  const accountId = token ? profile.data?.id : undefined;
+  return <AccountSearch key={accountId ?? "no-account"} accountId={accountId} />;
+}
+
+function AccountSearch({ accountId }: { accountId?: number }) {
   const router = useRouter();
   const { token } = useSession();
   const inputRef = useRef<TextInput>(null);
@@ -81,10 +88,11 @@ export default function Search() {
   );
   const [input, setInput] = useState("");
   const [query, setQuery] = useState("");
-  const [recent, setRecent] = useState(readRecentSearches);
+  const [recent, setRecent] = useState(() => (accountId ? readRecentSearches(accountId) : []));
   function updateRecent(next: RecentSearch[]) {
+    if (!accountId) return;
     setRecent(next);
-    if (!saveRecentSearches(next))
+    if (!saveRecentSearches(accountId, next))
       Alert.alert(
         "Could not save recent searches",
         "Changes will only last while this screen is open.",

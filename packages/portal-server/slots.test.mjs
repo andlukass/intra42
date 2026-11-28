@@ -66,6 +66,7 @@ async function fixture() {
     `(async()=>{${source}\nObject.assign(api,{ retainSlotSession,managePortalSlots,unregisterPortalProject,readPortalProjectDetails,finishPortalProject });})()`,
     {
       api,
+      onSessionReload: (callback) => callback(),
       parseProjectOverview,
       parseProjectStats,
       parseProjectTeams,
