@@ -1,3 +1,5 @@
+> Historical record: the web workspace was subsequently removed.
+
 # `unoficial-login-again` status
 
 The baseline sections below record the state inherited from `main`, the boundaries between

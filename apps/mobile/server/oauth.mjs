@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
-import { sessionStoreDescription } from "@intra42/portal-server/session-store";
+import { sessionStoreDescription } from "@42go/portal-server/session-store";
 import { handlePortal, portalIdentity } from "./portal.ts";
 
 const {

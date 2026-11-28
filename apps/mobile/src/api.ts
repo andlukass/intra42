@@ -414,7 +414,7 @@ async function requestIntra(url: string, token: string, signal?: AbortSignal, bo
       signal,
     }).catch((error: unknown) => {
       if (signal?.aborted) throw error;
-      throw new ApiError("Could not connect to Intra42. Check your connection and try again.", 0);
+      throw new ApiError("Could not connect to 42go. Check your connection and try again.", 0);
     });
     if (response.ok) return response;
     if (response.status === 429) {

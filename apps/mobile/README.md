@@ -1,4 +1,4 @@
-# Intra42 mobile
+# 42go mobile
 
 The native app uses Expo Router and TanStack Query. On iOS it uses native system tabs. Android uses a standard React Navigation tab bar. Both show Home, Projects, Slots, Clusters, and Search. The signed-in user's photo appears in the Home profile card and as the Home tab icon. Until the tab photo is ready, or if it fails, Home shows an avatar icon. Logout is at the end of Home.
 
@@ -56,8 +56,11 @@ npm run android
 ```
 
 Use `npm run dev:all` to start Metro and the Nest API in the Firebase Functions,
-Firestore and Hosting emulators. The app uses `http://127.0.0.1:8787` in this mode;
-Metro defaults to 8081. `npm run dev:functions` starts only the backend emulators.
+Firestore and Hosting emulators. The backend runs at `http://127.0.0.1:8787`;
+the app uses `EXPO_PUBLIC_INTRA42_OAUTH_URL` from `.env` when configured, falling
+back to that local address otherwise. For a physical phone, configure an HTTPS
+URL that forwards to the local backend, since loopback on the phone refers to
+the phone itself. Metro defaults to 8081. `npm run dev:functions` starts only the backend emulators.
 See [the backend README](../functions/README.md) for configuration and persistence.
 
 The terminal follows Delphi's service-log navigation: **0** shows both logs,
@@ -86,7 +89,7 @@ Demo slot changes stay in memory.
 
 ### Local iOS screenshots
 
-With the Intra42 development build installed on an iPhone 17 simulator and
+With the 42go development build installed on an iPhone 17 simulator and
 FFmpeg available, run `npm run screenshots:mobile` from the repository root.
 The script starts a separate Metro server in demo mode, then captures Home,
 Projects, Holy Graph, Project list, Slots, and Clusters. It waits for each
@@ -94,7 +97,7 @@ route and its queries to settle before taking the screenshot. It saves framed
 PNGs to the ignored `output/mobile-screenshots/` directory. No sign-in or
 upload is involved. Use `SCREENSHOT_METRO_PORT` if port `8093` is occupied.
 
-The script reopens Intra42 on the selected simulator in demo mode and stops
+The script reopens 42go on the selected simulator in demo mode and stops
 its Metro server when it finishes. Reopen the app using your usual Metro server
 to return to your development session.
 
@@ -105,15 +108,14 @@ is already running. Fast Refresh cannot add native modules to an installed app;
 
 For iOS 27, Expo SDK 57 enables the required scene life cycle through
 `expo-build-properties`. If an existing local iOS build closes immediately on
-launch, run `npm exec --workspace @intra42/mobile -- expo prebuild --platform ios`
+launch, run `npm exec --workspace @42go/mobile -- expo prebuild --platform ios`
 to apply the native configuration, then rebuild and reinstall.
 
 ## Sign in through your own server
 
 The mobile app now uses the username/password portal flow from `unofficial-login`.
-The web and native services share the HTTP login flow, refresh grants, and scoped
-calendar cookies in `packages/portal-server`. The web app keeps its own local
-browser endpoints and UI.
+The HTTP login flow, refresh grants, and scoped calendar cookies live in
+`packages/portal-server`.
 
 1. Use Node.js 22.12+ for the sign-in service; Chrome is not required.
 2. Copy [.env.example](.env.example) to `.env` in this workspace. Keep
@@ -123,8 +125,8 @@ browser endpoints and UI.
 3. Set `EXPO_PUBLIC_INTRA42_OAUTH_URL` to your HTTPS service URL (an optional path prefix is supported). This existing
    variable name is retained for compatibility. Start `npm run login:mobile`
    from the repository root (`npm run oauth:mobile` remains an alias).
-4. Restart Metro and select **Sign in with 42** on Home. The system authentication
-   browser opens the Intra42 login page. Enter your **Login** and **Password**
+4. Restart Metro and select **Sign in to 42 intra**. The system authentication
+   browser opens the 42go login page. Enter your **Login** and **Password**
    there; after sign-in the browser returns to the app automatically. Existing
    installations already include `expo-web-browser` and `expo-crypto`, so this
    change needs no new native dependencies.
@@ -149,10 +151,11 @@ manages cookies without launching or installing a browser.
 
 ### Authentication browser
 
-The app shows one **Sign in with 42** button. It uses
+The signed-out screen shows a **Sign in to 42 intra** button and a GitHub link
+to the project repository; the tab bar appears after sign-in. The button uses
 `WebBrowser.openAuthSessionAsync` to open the real system authentication browser:
 a modal session on iOS and a Custom Tab on Android. The visible domain belongs
-to the Intra42 server. This remains the server-backed portal login, rather than
+to the 42go server. This remains the server-backed portal login, rather than
 a registered OAuth authorization flow.
 
 The hosted page matches the public 42 student login theme: its geometric
@@ -205,7 +208,7 @@ No password or session key is included in the callback URL.
   arbitrary URLs, unknown queries, and arbitrary writes are rejected.
 - `GET /api/me/slots` reads available and blocked intervals using the signed-in
   portal cookies. `POST /api/slots` creates availability for that account using
-  the portal CSRF token. It shares the web calendar's validation and write lock.
+  the portal CSRF token, with validation and a write lock.
   Cancellation reloads a wider calendar window before matching the exact slot,
   preserving the boundary quarters and all official IDs returned by 42.
 - Native endpoints reject browser Origin/Fetch Metadata headers and direct
@@ -250,7 +253,7 @@ Holding and releasing without moving saves the selected 30-minute cell through
 the same flow, without also opening the form. The drag action uses the same validation and server endpoint as the form, shows success or errors in a temporary toast above the tab bar, and blocks duplicate submissions until the calendar refreshes. While selecting, timeline scrolling, day paging, and page scrolling are locked until release or cancellation. The confirmation form has a native start date picker and a start-time dropdown with 15-minute steps, a duration selector from 30 minutes to 8 hours in 15-minute steps, and a calculated end with a next-day indicator. The slot form uses scrollable content and a fixed bottom footer, matching the event modal, with secondary Cancel and primary Open slot actions side by side. The slot form uses scrollable content and a fixed bottom footer with Close and Open slot side by side, matching the event sheet. Tapping a past time shows an invalid-time toast. Existing open slots appear as continuous turquoise blocks with their full time range and an Available label; their height and position follow the actual interval, including 15-minute starts. New slots appear optimistically in the weekly calendar while saving. Cancellation also removes the slot immediately from cached calendars. Rejected
 creations or cancellations restore the previous calendar; successful writes refresh the official
 slots before unlocking further changes. Screen toasts sit 8 points above the bottom navigation safe area, using the shared
-Toast default; modal toasts retain their explicit position. Slot creation and cancellation use a turquoise toast with white text, rounded corners, and a subtle shadow; it disappears after three seconds. Tap × on an open slot to cancel it. Cancellation resolves the real slot IDs from the authenticated calendar, rejects reserved or closed slots, blocks duplicate writes, and refreshes the calendar after confirmation. Existing slots stay blocked. The official calendar enforces campus limits and may reject slot creation. Other portal-only widgets remain in the web experiment. The mobile agenda lists the signed-in account’s official events, and Logtime opens on the current month and snaps to one complete month at a time, retaining the selected month when the layout width changes, with active days highlighted. The arrows move between the latest four months and are disabled at the ends of that range. Tap a day to see its total in an anchored tooltip. Tap outside to dismiss it.
+Toast default; modal toasts retain their explicit position. Slot creation and cancellation use a turquoise toast with white text, rounded corners, and a subtle shadow; it disappears after three seconds. Tap × on an open slot to cancel it. Cancellation resolves the real slot IDs from the authenticated calendar, rejects reserved or closed slots, blocks duplicate writes, and refreshes the calendar after confirmation. Existing slots stay blocked. The official calendar enforces campus limits and may reject slot creation. The mobile agenda lists the signed-in account’s official events, and Logtime opens on the current month and snaps to one complete month at a time, retaining the selected month when the layout width changes, with active days highlighted. The arrows move between the latest four months and are disabled at the ends of that range. Tap a day to see its total in an anchored tooltip. Tap outside to dismiss it.
 
 ### Profile photos and icons
 
@@ -306,7 +309,6 @@ Run these checks from the repository root:
 ```sh
 npm run lint
 npm run typecheck
-npm run build:web
 node --experimental-strip-types --test \
   apps/mobile/server/*.test.mjs \
   apps/mobile/src/session-*.test.mjs \
@@ -494,8 +496,7 @@ Quests shows the quest
 enrollments and their completion status from `/v2/users/:id/quests_users`.
 
 
-Slots follows the responsive `apps/web/src/pages/slots.css` layout from
-`unofficial-login`. The shared `styles.card` surface, matching Pending evaluations,
+Slots follows the responsive layout from `unofficial-login`. The shared `styles.card` surface, matching Pending evaluations,
 groups the compact toolbar, turquoise
 seven-day picker, centered week title, and bordered daily schedule with a separate
 time column. Hour labels use the official 12-hour am/pm format; half-hour rows
@@ -786,9 +787,9 @@ on both native commands when preparing preview builds. Rerun prebuild when chang
 the update URL or channel so the existing native projects pick up the new configuration.
 
 ```sh
-OTA_CHANNEL=preview npm exec --workspace @intra42/mobile -- expo prebuild --platform ios
+OTA_CHANNEL=preview npm exec --workspace @42go/mobile -- expo prebuild --platform ios
 OTA_CHANNEL=preview npm run ios -- --configuration Release --no-bundler
-OTA_CHANNEL=preview npm exec --workspace @intra42/mobile -- expo prebuild --platform android
+OTA_CHANNEL=preview npm exec --workspace @42go/mobile -- expo prebuild --platform android
 OTA_CHANNEL=preview npm run android -- --variant release --no-bundler
 
 npm run update:ota -- --channel preview
@@ -814,7 +815,7 @@ cp apps/mobile/.env.review.example apps/mobile/.env.review
 npm run review:ios
 ```
 
-Open the Intra42 development client with the Metro URL
+Open the 42go development client with the Metro URL
 `http://127.0.0.1:8094`. Tap **Sign in** and enter **test** / **123456**.
 The command starts a loopback-only review sign-in service on port 8791 and the
 Firestore Emulator on port 8089 in a separate `demo-` Firebase project. The app

@@ -1,9 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { json } from "@intra42/portal-server/http";
-import { createLoginHandler, type PortalLogin } from "@intra42/portal-server/login";
-import { onSessionReload, setTimeout } from "@intra42/portal-server/session-runtime";
-import { readSessionRecords, writeSessionRecords } from "@intra42/portal-server/session-store";
+import { json } from "@42go/portal-server/http";
+import { createLoginHandler, type PortalLogin } from "@42go/portal-server/login";
+import { onSessionReload, setTimeout } from "@42go/portal-server/session-runtime";
+import { readSessionRecords, writeSessionRecords } from "@42go/portal-server/session-store";
 import type { Token } from "../src/session-token.js";
 import { signInAssets } from "./sign-in-assets.ts";
 import { signInPage, signInScript } from "./sign-in-page.ts";
@@ -174,7 +174,7 @@ export function createBrowserLogin(
         return true;
       }
       if (!browserRequest(req) || req.headers["x-intra42-csrf"] !== entry.csrf) {
-        json(res, 403, { error: "Start sign-in from the Intra42 app." });
+        json(res, 403, { error: "Start sign-in from the 42go app." });
         return true;
       }
       if (url.searchParams.get("action") === "cancel") {

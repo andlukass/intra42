@@ -15,10 +15,10 @@ const children = [];
 let stopping = false;
 
 const backendOrigin = `http://127.0.0.1:${all && !review ? "8787" : process.env.PORT || "8787"}`;
-if (all) process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL = backendOrigin;
+if (all) process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL ||= backendOrigin;
 const terminal = all
   ? createDevTerminal(
-      `Intra42 local development
+      `42go local development
   1  Metro     http://localhost:${metroPort}
   2  Backend   ${backendOrigin}
      App API   ${process.env.EXPO_PUBLIC_INTRA42_OAUTH_URL || backendOrigin}`,

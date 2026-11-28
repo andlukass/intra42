@@ -1,4 +1,4 @@
-# Intra42 OTA infrastructure
+# 42go OTA infrastructure
 
 The `intra42Updates` Firebase HTTPS function serves Expo Updates v1 manifests
 by platform, channel, and runtime fingerprint. A lookup without a matching

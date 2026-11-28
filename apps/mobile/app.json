@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "42Go Intra",
-    "slug": "intra42",
+    "name": "42go",
+    "slug": "42go",
     "icon": "./assets/app-icon.png",
     "scheme": "intra42",
     "plugins": [

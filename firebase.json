@@ -7,7 +7,7 @@
     {
       "source": "apps/functions",
       "codebase": "intra42-api",
-      "predeploy": ["npm run build --workspace @intra42/functions"]
+      "predeploy": ["npm run build --workspace @42go/functions"]
     }
   ],
   "firestore": {

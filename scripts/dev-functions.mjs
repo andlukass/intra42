@@ -18,7 +18,7 @@ if (existsSync(source)) {
 }
 const run = (args) =>
   spawn(process.execPath, args, { cwd: root, stdio: "inherit", env: process.env });
-const compiled = spawn("npm", ["run", "build", "--workspace", "@intra42/functions"], {
+const compiled = spawn("npm", ["run", "build", "--workspace", "@42go/functions"], {
   cwd: root,
   stdio: "inherit",
 });

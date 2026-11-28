@@ -45,7 +45,7 @@ if [[ "$device_state" == "Shutdown" ]]; then
 fi
 xcrun simctl bootstatus "$device_id" -b
 if ! app_container="$(xcrun simctl get_app_container "$device_id" "$bundle_id" data 2>/dev/null)"; then
-  echo 'Install the Intra42 dev build first: npm run ios -- --device "iPhone 17" --no-bundler' >&2
+  echo 'Install the 42go dev build first: npm run ios -- --device "iPhone 17" --no-bundler' >&2
   exit 1
 fi
 

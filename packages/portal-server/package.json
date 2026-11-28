@@ -1,5 +1,5 @@
 {
-  "name": "@intra42/portal-server",
+  "name": "@42go/portal-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",

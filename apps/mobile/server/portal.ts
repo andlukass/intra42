@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { json } from "@intra42/portal-server/http";
-import { createLoginHandler, type PortalLogin } from "@intra42/portal-server/login";
-import { forget, refreshSession } from "@intra42/portal-server/refresh";
-import { onSessionReload } from "@intra42/portal-server/session-runtime";
-import { readSessionRecords, writeSessionRecords } from "@intra42/portal-server/session-store";
+import { json } from "@42go/portal-server/http";
+import { createLoginHandler, type PortalLogin } from "@42go/portal-server/login";
+import { forget, refreshSession } from "@42go/portal-server/refresh";
+import { onSessionReload } from "@42go/portal-server/session-runtime";
+import { readSessionRecords, writeSessionRecords } from "@42go/portal-server/session-store";
 import {
   finishPortalProject,
   managePortalSlots,
@@ -16,7 +16,7 @@ import {
   readPortalProjectStudents,
   revokeSlotSession,
   unregisterPortalProject,
-} from "@intra42/portal-server/slots";
+} from "@42go/portal-server/slots";
 import { createBrowserLogin } from "./browser-login.ts";
 import { changeEvent, readEvents } from "./events.ts";
 

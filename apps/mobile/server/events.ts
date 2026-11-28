@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { json } from "@intra42/portal-server/http";
+import { json } from "@42go/portal-server/http";
 import { type Event, eventAction } from "../src/events.ts";
 
 type EventSession = { access_token: string; userId: number; savingEvent?: boolean };

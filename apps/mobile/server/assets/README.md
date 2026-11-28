@@ -1,7 +1,7 @@
 # Login theme assets
 
 The hosted sign-in page uses the public 42 student login theme as its visual
-reference. The app's browser still displays the Intra42 server origin.
+reference. The app's browser still displays the 42go server origin.
 
 - `login-background.jpg`: `https://auth.42.fr/auth/resources/vh5yw/login/students/img/bkgrnd.jpg`
 - `42-logo.svg`: `https://auth.42.fr/auth/resources/vh5yw/login/students/img/42_logo.svg`

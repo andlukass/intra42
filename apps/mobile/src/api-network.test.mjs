@@ -33,10 +33,7 @@ test("a stopped backend shows a useful connection error and a subsequent retry r
   await assert.rejects(client.api("local-key", "/search?query=llopes"), (error) => {
     assert.ok(error instanceof client.ApiError);
     assert.equal(error.status, 0);
-    assert.equal(
-      error.message,
-      "Could not connect to Intra42. Check your connection and try again.",
-    );
+    assert.equal(error.message, "Could not connect to 42go. Check your connection and try again.");
     return true;
   });
   running = true;

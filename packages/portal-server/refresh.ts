@@ -110,7 +110,7 @@ export async function observeRefreshGrant(page: Page): Promise<RefreshGrant | nu
     const body = await response.json();
     const clientId = new URLSearchParams(response.request().postData() ?? "").get("client_id");
     const refreshToken = typeof body?.refresh_token === "string" ? body.refresh_token : "";
-    console.info("[Intra42] 42 issued a refresh token:", Boolean(refreshToken));
+    console.info("[42go] 42 issued a refresh token:", Boolean(refreshToken));
     if (!refreshToken || !clientId) return null;
     return { endpoint: response.url(), clientId, refreshToken, expiresIn: body.refresh_expires_in };
   } catch {
@@ -159,7 +159,7 @@ async function exchange(key: string, session: RefreshEntry): Promise<AccessToken
     signal: AbortSignal.timeout(10_000),
   });
   const body = await response.json().catch(() => null);
-  console.info("[Intra42] Token refresh HTTP", response.status);
+  console.info("[42go] Token refresh HTTP", response.status);
   if (
     response.status === 401 ||
     (response.status === 400 && body?.error !== "temporarily_unavailable")

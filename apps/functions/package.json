@@ -1,5 +1,5 @@
 {
-  "name": "@intra42/functions",
+  "name": "@42go/functions",
   "private": true,
   "type": "module",
   "main": "dist/index.js",

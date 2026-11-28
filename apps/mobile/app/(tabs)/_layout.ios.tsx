@@ -2,11 +2,16 @@ import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { useState } from "react";
 import { useProfileAvatar } from "../../src/api";
 import { CircularTabAvatar, type TabAvatar } from "../../src/circular-tab-avatar";
+import { SignIn } from "../../src/SignIn";
+import { useSession } from "../../src/session";
 import { teal } from "../../src/ui";
 export default function IosTabs() {
   const avatar = useProfileAvatar();
   const [image, setImage] = useState<TabAvatar>();
+  const { token, loading } = useSession();
   const icon = image?.source === avatar ? image?.uri : undefined;
+  if (loading) return null;
+  if (!token) return <SignIn />;
   return (
     <>
       {avatar && <CircularTabAvatar key={avatar} uri={avatar} onReady={setImage} />}

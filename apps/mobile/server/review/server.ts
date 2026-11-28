@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomInt } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage } from "node:http";
 import { promisify } from "node:util";
-import { json } from "@intra42/portal-server/http";
+import { json } from "@42go/portal-server/http";
 import type { CompletedEvaluation, EvaluationPoint, Profile, Slot } from "../../src/api.js";
 import type { MarkedProject } from "../../src/home/marks.js";
 import type { OfficialProjectOverview } from "../../src/projects/overview.js";

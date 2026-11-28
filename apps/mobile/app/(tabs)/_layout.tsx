@@ -3,9 +3,14 @@ import { useState } from "react";
 import { type ColorValue, Image, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { useProfileAvatar } from "../../src/api";
+import { SignIn } from "../../src/SignIn";
+import { useSession } from "../../src/session";
 import { teal } from "../../src/ui";
 export default function AndroidTabs() {
   const avatar = useProfileAvatar();
+  const { token, loading } = useSession();
+  if (loading) return null;
+  if (!token) return <SignIn />;
   return (
     <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: teal }}>
       <Tabs.Screen

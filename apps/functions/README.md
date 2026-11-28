@@ -1,4 +1,4 @@
-# Intra42 API
+# 42go API
 
 Nest hosts the existing allow-listed portal API as Firebase HTTPS Function `api`
 (2nd generation, Node 22, europe-west1). Firebase Hosting site `api-intra` rewrites
@@ -56,7 +56,7 @@ and per-session distributed locks; do not simply raise concurrency/maxInstances.
 
 ## Deployment preparation
 
-Build with `npm run build --workspace @intra42/functions`. The bundle includes
+Build with `npm run build --workspace @42go/functions`. The bundle includes
 shared source, copies login assets and installs only the declared runtime packages;
 no Chrome binary is needed. Configure the Firebase project, create Hosting site
 `api-intra`, set both secrets and deploy Functions, Firestore rules and Hosting when

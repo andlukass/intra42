@@ -1,7 +1,7 @@
 # Portal server
 
 Shared Chrome authentication, refresh grants, scoped calendar sessions, and
-session persistence for the native and web services.
+session persistence for the native service.
 
 ## Replacing session persistence
 
